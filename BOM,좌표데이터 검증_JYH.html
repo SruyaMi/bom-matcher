@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOM ↔ 아트웍 좌표 매칭 툴</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; color: #222; min-height: 100vh; }
+
+  header {
+    background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+    color: white; padding: 18px 32px;
+    display: flex; align-items: center; gap: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  header h1 { font-size: 1.4rem; font-weight: 600; }
+  header span { font-size: 0.85rem; opacity: 0.75; }
+
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px 20px; }
+
+  /* Upload Section */
+  .upload-section {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;
+  }
+  .upload-card {
+    background: white; border-radius: 12px; padding: 22px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.08); border: 2px solid transparent;
+    transition: border-color 0.2s;
+  }
+  .upload-card.loaded { border-color: #4caf50; }
+  .upload-card h3 { font-size: 0.95rem; color: #555; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .upload-card h3 .badge {
+    background: #e8eaf6; color: #3949ab; padding: 2px 8px;
+    border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+  }
+  .upload-card.loaded h3 .badge { background: #e8f5e9; color: #2e7d32; }
+
+  .drop-zone {
+    border: 2px dashed #c5cae9; border-radius: 8px; padding: 28px 16px;
+    text-align: center; cursor: pointer; transition: all 0.2s;
+    background: #fafbff;
+  }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: #3949ab; background: #e8eaf6; }
+  .drop-zone.has-file { border-color: #4caf50; background: #f1f8e9; }
+  .drop-zone .icon { font-size: 2rem; margin-bottom: 8px; }
+  .drop-zone p { font-size: 0.85rem; color: #666; }
+  .drop-zone .filename { font-weight: 600; color: #2e7d32; font-size: 0.9rem; margin-top: 6px; }
+  .drop-zone input[type=file] { display: none; }
+
+  .sheet-selector { margin-top: 12px; display: none; }
+  .sheet-selector label { font-size: 0.8rem; color: #666; display: block; margin-bottom: 4px; }
+  .sheet-selector select {
+    width: 100%; padding: 6px 10px; border: 1px solid #ddd;
+    border-radius: 6px; font-size: 0.85rem; background: white;
+  }
+
+  /* Config Section */
+  .config-section {
+    background: white; border-radius: 12px; padding: 20px 24px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.08); margin-bottom: 24px;
+  }
+  .config-section h3 { font-size: 0.95rem; color: #555; margin-bottom: 14px; }
+  .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+  .config-item label { font-size: 0.8rem; color: #666; display: block; margin-bottom: 4px; }
+  .config-item select, .config-item input {
+    width: 100%; padding: 7px 10px; border: 1px solid #ddd;
+    border-radius: 6px; font-size: 0.85rem; background: white;
+  }
+
+  /* Action Button */
+  .action-row { display: flex; gap: 12px; margin-bottom: 24px; align-items: center; }
+  .btn {
+    padding: 10px 24px; border: none; border-radius: 8px;
+    font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.18s;
+  }
+  .btn-primary { background: #3949ab; color: white; }
+  .btn-primary:hover { background: #283593; transform: translateY(-1px); }
+  .btn-primary:disabled { background: #b0bec5; cursor: not-allowed; transform: none; }
+  .btn-export { background: #388e3c; color: white; }
+  .btn-export:hover { background: #2e7d32; }
+  .btn-export:disabled { background: #b0bec5; cursor: not-allowed; }
+  .btn-secondary { background: #f5f5f5; color: #444; border: 1px solid #ddd; }
+  .btn-secondary:hover { background: #e0e0e0; }
+
+  /* Summary Cards */
+  .summary-cards {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 24px;
+  }
+  .card {
+    background: white; border-radius: 10px; padding: 16px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.08); text-align: center;
+    border-left: 4px solid #e0e0e0;
+  }
+  .card.total { border-color: #7986cb; }
+  .card.matched { border-color: #4caf50; }
+  .card.bom-only { border-color: #ef5350; }
+  .card.coord-only { border-color: #ff9800; }
+  .card.mismatch { border-color: #e040fb; }
+  .card.coverage { border-color: #9c27b0; }
+  .card .num { font-size: 1.8rem; font-weight: 700; color: #222; }
+  .card .label { font-size: 0.75rem; color: #888; margin-top: 4px; }
+  .card.matched .num { color: #2e7d32; }
+  .card.bom-only .num { color: #c62828; }
+  .card.coord-only .num { color: #e65100; }
+  .card.mismatch .num { color: #ad1457; }
+  .card.coverage .num { color: #6a1b9a; font-size: 1.5rem; }
+
+  /* Filter Bar */
+  .filter-bar {
+    background: white; border-radius: 10px; padding: 14px 20px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.08); margin-bottom: 16px;
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  }
+  .filter-btn {
+    padding: 6px 16px; border: 2px solid #e0e0e0; border-radius: 20px;
+    font-size: 0.82rem; cursor: pointer; background: white;
+    transition: all 0.15s; font-weight: 500;
+  }
+  .filter-btn:hover { border-color: #7986cb; color: #3949ab; }
+  .filter-btn.active { background: #3949ab; color: white; border-color: #3949ab; }
+  .filter-btn.f-matched.active { background: #4caf50; border-color: #4caf50; }
+  .filter-btn.f-mismatch.active { background: #ab47bc; border-color: #ab47bc; }
+  .filter-btn.f-bom-only.active { background: #ef5350; border-color: #ef5350; }
+  .filter-btn.f-coord-only.active { background: #ff9800; border-color: #ff9800; }
+
+  .search-box {
+    margin-left: auto;
+    padding: 6px 14px; border: 1px solid #ddd; border-radius: 20px;
+    font-size: 0.85rem; width: 200px; outline: none;
+  }
+  .search-box:focus { border-color: #3949ab; }
+
+  /* Table */
+  .table-wrap {
+    background: white; border-radius: 12px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.08); overflow: hidden;
+  }
+  .table-scroll { overflow-x: auto; max-height: 580px; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  thead th {
+    background: #e8eaf6; color: #283593; font-weight: 700;
+    padding: 10px 12px; text-align: left; position: sticky; top: 0; z-index: 10;
+    border-bottom: 2px solid #c5cae9; white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid #f0f0f0; transition: background 0.1s; }
+  tbody tr:hover { background: #f8f9ff; }
+  tbody td { padding: 8px 12px; vertical-align: middle; }
+
+  /* Row status colors */
+  tr.matched td:first-child { border-left: 3px solid #4caf50; }
+  tr.bom-only td:first-child { border-left: 3px solid #ef5350; }
+  tr.coord-only td:first-child { border-left: 3px solid #ff9800; }
+  tr.mismatch td:first-child { border-left: 3px solid #e040fb; }
+
+  tr.matched { background: #f9fff9; }
+  tr.bom-only { background: #fff5f5; }
+  tr.coord-only { background: #fff8f0; }
+  tr.mismatch { background: #fdf0ff; }
+
+  .status-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 12px;
+    font-size: 0.72rem; font-weight: 700; white-space: nowrap;
+  }
+  .badge-matched { background: #e8f5e9; color: #2e7d32; }
+  .badge-bom-only { background: #ffebee; color: #c62828; }
+  .badge-coord-only { background: #fff3e0; color: #e65100; }
+  .badge-mismatch { background: #fce4ec; color: #880e4f; }
+
+  /* Mismatch highlight on specific cells */
+  td.size-mismatch {
+    background: #fce4ec !important;
+    color: #880e4f;
+    font-weight: 700;
+  }
+  td.size-mismatch .mismatch-arrow { color: #e040fb; margin: 0 4px; }
+
+  .refdes { font-weight: 700; font-family: monospace; font-size: 0.88rem; }
+  .na { color: #bbb; font-style: italic; }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center; padding: 60px 20px; color: #999;
+  }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
+  .empty-state p { font-size: 0.95rem; }
+
+  /* Progress bar */
+  .progress-bar-wrap { margin-top: 10px; display: none; }
+  .progress-bar { height: 4px; background: #e0e0e0; border-radius: 2px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: #3949ab; width: 0; transition: width 0.3s; }
+
+  /* Tooltip */
+  [title] { cursor: help; }
+
+  @media (max-width: 900px) {
+    .upload-section { grid-template-columns: 1fr; }
+    .summary-cards { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .summary-cards { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🔍 BOM ↔ 아트웍 좌표 매칭 툴</h1>
+    <span>PCB BOM과 좌표 데이터를 비교하여 매칭 현황을 분석합니다</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Upload Section -->
+  <div class="upload-section">
+    <!-- BOM -->
+    <div class="upload-card" id="bom-card">
+      <h3>
+        <span>📋</span> BOM 파일
+        <span class="badge" id="bom-badge">미업로드</span>
+      </h3>
+      <div class="drop-zone" id="bom-drop" onclick="document.getElementById('bom-input').click()">
+        <div class="icon">📁</div>
+        <p>클릭하거나 파일을 끌어다 놓으세요</p>
+        <p style="font-size:0.78rem;margin-top:4px;color:#999">.xlsx, .xls 지원</p>
+        <div class="filename" id="bom-filename"></div>
+        <input type="file" id="bom-input" accept=".xlsx,.xls">
+      </div>
+      <div class="sheet-selector" id="bom-sheet-sel">
+        <label>📊 시트 선택</label>
+        <select id="bom-sheet" onchange="onBomSheetChange()"></select>
+      </div>
+    </div>
+
+    <!-- Coordinate -->
+    <div class="upload-card" id="coord-card">
+      <h3>
+        <span>📍</span> 좌표 데이터 파일
+        <span class="badge" id="coord-badge">미업로드</span>
+      </h3>
+      <div class="drop-zone" id="coord-drop" onclick="document.getElementById('coord-input').click()">
+        <div class="icon">📁</div>
+        <p>클릭하거나 파일을 끌어다 놓으세요</p>
+        <p style="font-size:0.78rem;margin-top:4px;color:#999">.xlsx, .xls 지원</p>
+        <div class="filename" id="coord-filename"></div>
+        <input type="file" id="coord-input" accept=".xlsx,.xls">
+      </div>
+      <div class="sheet-selector" id="coord-sheet-sel">
+        <label>📊 시트 선택</label>
+        <select id="coord-sheet" onchange="onCoordSheetChange()"></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Config Section -->
+  <div class="config-section" id="config-section" style="display:none">
+    <h3>⚙️ 매칭 설정</h3>
+    <div class="config-grid">
+      <div class="config-item">
+        <label>BOM - Location 컬럼 (RefDes)</label>
+        <select id="bom-loc-col"></select>
+      </div>
+      <div class="config-item">
+        <label>BOM - 품명 컬럼</label>
+        <select id="bom-name-col"></select>
+      </div>
+      <div class="config-item">
+        <label>BOM - 규격 컬럼</label>
+        <select id="bom-spec-col"></select>
+      </div>
+      <div class="config-item">
+        <label>BOM - Maker 컬럼</label>
+        <select id="bom-maker-col"></select>
+      </div>
+      <div class="config-item">
+        <label>BOM - 단위수량 컬럼 <span style="color:#f57c00;font-size:0.75rem;">(수량 검증용)</span></label>
+        <select id="bom-qty-col"><option value="">-- 사용 안 함 --</option></select>
+      </div>
+      <div class="config-item">
+        <label>좌표 - RefDes 컬럼</label>
+        <select id="coord-ref-col"></select>
+      </div>
+      <div class="config-item">
+        <label>좌표 - PCB Decal 컬럼</label>
+        <select id="coord-decal-col"></select>
+      </div>
+      <div class="config-item">
+        <label>좌표 - Layer 컬럼</label>
+        <select id="coord-layer-col"></select>
+      </div>
+      <div class="config-item">
+        <label>좌표 헤더 행 번호 (0부터 시작)</label>
+        <input type="number" id="coord-header-row" value="2" min="0" max="10">
+      </div>
+    </div>
+
+    <!-- 제외 옵션 -->
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid #eee;">
+      <div style="font-size:0.82rem;color:#666;margin-bottom:10px;font-weight:600;">🚫 좌표 데이터에서 제외할 항목</div>
+      <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;cursor:pointer;">
+          <input type="checkbox" id="excl-tp" checked style="width:15px;height:15px;accent-color:#3949ab;">
+          <span><b>TP</b> — 테스트 포인트 (TP001, TP101…)</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;cursor:pointer;">
+          <input type="checkbox" id="excl-fid" style="width:15px;height:15px;accent-color:#3949ab;">
+          <span><b>FID / FD</b> — 피듀셜 마크</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;cursor:pointer;">
+          <input type="checkbox" id="excl-clamp" style="width:15px;height:15px;accent-color:#3949ab;">
+          <span><b>CLAMP / CLP / HOLE / MTG / MH</b> — 고정홀류</span>
+        </label>
+        <div style="display:flex;align-items:center;gap:6px;margin-left:8px;">
+          <span style="font-size:0.82rem;color:#666;">직접 입력:</span>
+          <input type="text" id="excl-custom" placeholder="예: MP,H,MH (쉼표 구분)"
+            style="padding:5px 10px;border:1px solid #ddd;border-radius:6px;font-size:0.82rem;width:200px;">
+        </div>
+      </div>
+      <div id="excl-preview" style="margin-top:8px;font-size:0.78rem;color:#888;"></div>
+    </div>
+  </div>
+
+  <!-- Action Row -->
+  <div class="action-row">
+    <button class="btn btn-primary" id="match-btn" onclick="runMatch()" disabled>
+      🔗 매칭 실행
+    </button>
+    <button class="btn btn-export" id="export-btn" onclick="exportExcel()" disabled>
+      📥 Excel 내보내기
+    </button>
+    <button class="btn btn-secondary" onclick="resetAll()">
+      🔄 초기화
+    </button>
+    <div id="status-msg" style="font-size:0.85rem;color:#666;margin-left:8px;"></div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-cards" id="summary" style="display:none">
+    <div class="card total">
+      <div class="num" id="s-total">-</div>
+      <div class="label">전체 RefDes (BOM)</div>
+    </div>
+    <div class="card matched">
+      <div class="num" id="s-matched">-</div>
+      <div class="label">매칭 성공 ✅</div>
+    </div>
+    <div class="card mismatch">
+      <div class="num" id="s-mismatch">-</div>
+      <div class="label">규격 불일치 ⚡</div>
+    </div>
+    <div class="card bom-only">
+      <div class="num" id="s-bom-only">-</div>
+      <div class="label">BOM에만 있음 ❌</div>
+    </div>
+    <div class="card coord-only">
+      <div class="num" id="s-coord-only">-</div>
+      <div class="label">좌표에만 있음 ⚠️</div>
+    </div>
+    <div class="card coverage">
+      <div class="num" id="s-coverage">-</div>
+      <div class="label">매칭률</div>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar" id="filter-bar" style="display:none">
+    <button class="filter-btn active" data-filter="all" onclick="setFilter('all',this)">전체</button>
+    <button class="filter-btn f-matched" data-filter="matched" onclick="setFilter('matched',this)">✅ 매칭</button>
+    <button class="filter-btn f-mismatch" data-filter="mismatch" onclick="setFilter('mismatch',this)">⚡ 규격불일치</button>
+    <button class="filter-btn f-bom-only" data-filter="bom-only" onclick="setFilter('bom-only',this)">❌ BOM만</button>
+    <button class="filter-btn f-coord-only" data-filter="coord-only" onclick="setFilter('coord-only',this)">⚠️ 좌표만</button>
+    <input class="search-box" type="text" id="search-input" placeholder="🔍 RefDes 검색..." oninput="applyFilter()">
+  </div>
+
+  <!-- BOM 중복 RefDes 패널 -->
+  <div id="dup-panel" style="display:none;background:#f9f0ff;border:1px solid #ce93d8;border-radius:10px;
+    padding:12px 18px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <span style="font-size:0.88rem;font-weight:700;color:#6a1b9a;">⚠ BOM 중복 RefDes</span>
+      <span id="dup-count" style="background:#9c27b0;color:white;border-radius:12px;
+        padding:1px 8px;font-size:0.75rem;font-weight:700;"></span>
+      <span style="font-size:0.78rem;color:#999;margin-left:4px;">— 동일 RefDes가 여러 행에 등장 (마지막 행 데이터로 매칭됨)</span>
+    </div>
+    <div id="dup-list"></div>
+  </div>
+
+  <!-- 수량 불일치 패널 -->
+  <div id="qty-panel" style="display:none;background:#fff5f5;border:1px solid #ef9a9a;border-radius:10px;
+    padding:12px 18px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <span style="font-size:0.88rem;font-weight:700;color:#c62828;">🔢 BOM 수량 불일치</span>
+      <span id="qty-count" style="background:#ef5350;color:white;border-radius:12px;
+        padding:1px 8px;font-size:0.75rem;font-weight:700;"></span>
+      <span style="font-size:0.78rem;color:#999;margin-left:4px;">— Location의 RefDes 개수와 단위수량이 다른 행</span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
+        <thead>
+          <tr style="background:#ffebee;">
+            <th style="padding:6px 12px;text-align:left;color:#c62828;font-weight:700;border-bottom:1px solid #ef9a9a;">Location</th>
+            <th style="padding:6px 12px;text-align:left;color:#c62828;font-weight:700;border-bottom:1px solid #ef9a9a;">품명</th>
+            <th style="padding:6px 12px;text-align:left;color:#c62828;font-weight:700;border-bottom:1px solid #ef9a9a;">규격</th>
+            <th style="padding:6px 12px;text-align:center;color:#c62828;font-weight:700;border-bottom:1px solid #ef9a9a;">RefDes 수</th>
+            <th style="padding:6px 12px;text-align:center;color:#c62828;font-weight:700;border-bottom:1px solid #ef9a9a;">단위수량</th>
+            <th style="padding:6px 12px;text-align:center;color:#c62828;font-weight:700;border-bottom:1px solid #ef9a9a;">차이</th>
+          </tr>
+        </thead>
+        <tbody id="qty-list"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 비PCB 스킵 패널 -->
+  <div id="skip-panel" style="display:none;background:#fff8f0;border:1px solid #ffcc80;border-radius:10px;
+    padding:12px 18px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span style="font-size:0.88rem;font-weight:700;color:#e65100;">⚠ BOM 비PCB 항목 스킵됨</span>
+      <span id="skip-count" style="background:#ff9800;color:white;border-radius:12px;
+        padding:1px 8px;font-size:0.75rem;font-weight:700;"></span>
+      <span style="font-size:0.78rem;color:#999;margin-left:4px;">— RefDes 패턴 불일치 (영문+숫자 형식 아님) · 마우스 올리면 원본 Location 확인 가능</span>
+    </div>
+    <div id="skip-list" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table id="result-table">
+        <thead>
+          <tr>
+            <th>RefDes</th>
+            <th>상태</th>
+            <th>품명 (BOM)</th>
+            <th>규격 (BOM)</th>
+            <th>Maker</th>
+            <th>PCB Decal</th>
+            <th>Layer</th>
+            <th>Pos X</th>
+            <th>Pos Y</th>
+            <th>Orient</th>
+            <th>SMD</th>
+            <th>Part Type</th>
+          </tr>
+        </thead>
+        <tbody id="result-body">
+          <tr>
+            <td colspan="12">
+              <div class="empty-state">
+                <div class="icon">📂</div>
+                <p>BOM 파일과 좌표 데이터 파일을 업로드한 후 매칭을 실행하세요</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────
+let bomWorkbook = null, coordWorkbook = null;
+let bomData = [], coordData = [];
+let allRows = [];
+let currentFilter = 'all';
+
+// ─── Size / Pitch Extraction ──────────────────────────────
+// 칩 사이즈: 1608, 3216, 2012 등 (4자리 숫자)
+const CHIP_PAT   = /(?<![0-9])(0201|0402|0603|0805|1206|1210|1812|2512|1005|1608|2012|3216|3225|4532|4564|5025)(?![0-9])/;
+// 다이오드 패키지: SOD-123, SOD323, SOT-23, SMA, SMB, SMC 등
+const DIODE_PKG_PAT = /(SOD-?\d+[A-Z]?|SOT-?\d+[A-Z]?|SM[ABCD])/i;
+// BOM 피치: P5.0, P7.5mm, P3.5 등 (PHI·PIN·PCB 제외, mm 선택)
+const BOM_PITCH  = /\bP(?!HI|CB|IN|CF|VF)(\d+(?:\.\d+)?)(?:mm)?(?=$|[,)\s/\\])/i;
+// Coord 피치: _P5_, _P7.5_ 형태 (언더스코어 사이)
+const COORD_PITCH = /_P(\d+(?:\.\d+)?)_/;
+
+function normNum(v) { return String(parseFloat(v)); }
+function normPkg(raw) {
+  // 하이픈 제거, SOD/SOT 뒤 변형 문자(F, L 등) 제거
+  // ex) SOD-323F → SOD323, SMA → SMA, SOT-23S → SOT23
+  const s = raw.toUpperCase().replace(/-/g, '');
+  return s.replace(/^((?:SOD|SOT)\d+)[A-Z]$/, '$1');
+}
+
+function extractInfo(text, isCoord) {
+  const t = String(text || '');
+  let m = CHIP_PAT.exec(t);
+  if (m) return { type:'chip', val: m[1] };
+  m = DIODE_PKG_PAT.exec(t);
+  if (m) return { type:'pkg', val: normPkg(m[1]) };
+  m = (isCoord ? COORD_PITCH : BOM_PITCH).exec(t);
+  if (m) return { type:'pitch', val: normNum(m[1]) };
+  return null;
+}
+
+function checkSizeMatch(bomSpec, coordDecal) {
+  const bi = extractInfo(bomSpec,  false);
+  const ci = extractInfo(coordDecal, true);
+  if (!bi || !ci || bi.type !== ci.type)
+    return { match: true,  bomSize: bi?.val || null, coordSize: ci?.val || null };
+  const match = (bi.val === ci.val);
+  return { match, bomSize: bi.val, coordSize: ci.val };
+}
+
+// ─── Drag & Drop Setup ───────────────────────────────────
+function setupDrop(dropId, inputId, handler) {
+  const zone = document.getElementById(dropId);
+  const input = document.getElementById(inputId);
+
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) handler(e.dataTransfer.files[0]);
+  });
+  input.addEventListener('change', () => { if (input.files[0]) handler(input.files[0]); });
+}
+
+setupDrop('bom-drop', 'bom-input', f => readFile(f, 'bom'));
+setupDrop('coord-drop', 'coord-input', f => readFile(f, 'coord'));
+
+// ─── File Reading ─────────────────────────────────────────
+function readFile(file, type) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const wb = XLSX.read(e.target.result, { type: 'array' });
+    if (type === 'bom') {
+      bomWorkbook = wb;
+      populateSheets('bom-sheet', wb.SheetNames, 0);
+      document.getElementById('bom-sheet-sel').style.display = 'block';
+      document.getElementById('bom-filename').textContent = file.name;
+      document.getElementById('bom-drop').classList.add('has-file');
+      document.getElementById('bom-badge').textContent = '로드됨';
+      document.getElementById('bom-card').classList.add('loaded');
+      onBomSheetChange();
+    } else {
+      coordWorkbook = wb;
+      populateSheets('coord-sheet', wb.SheetNames, 0);
+      document.getElementById('coord-sheet-sel').style.display = 'block';
+      document.getElementById('coord-filename').textContent = file.name;
+      document.getElementById('coord-drop').classList.add('has-file');
+      document.getElementById('coord-badge').textContent = '로드됨';
+      document.getElementById('coord-card').classList.add('loaded');
+      onCoordSheetChange();
+    }
+    checkReady();
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function populateSheets(selId, names, defaultIdx) {
+  const sel = document.getElementById(selId);
+  sel.innerHTML = names.map((n,i) => `<option value="${i}">${n}</option>`).join('');
+  sel.value = defaultIdx;
+}
+
+// ─── Sheet Change Handlers ────────────────────────────────
+function onBomSheetChange() {
+  if (!bomWorkbook) return;
+  const idx = +document.getElementById('bom-sheet').value;
+  const sheet = bomWorkbook.Sheets[bomWorkbook.SheetNames[idx]];
+  bomData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+  if (bomData.length === 0) return;
+  const cols = Object.keys(bomData[0]);
+  populateColSelect('bom-loc-col', cols, guessCol(cols, ['Location','location','LOC','Loc','Ref','RefDes']));
+  populateColSelect('bom-name-col', cols, guessCol(cols, ['품    명','품명','Name','PART NAME','품  명']));
+  populateColSelect('bom-spec-col', cols, guessCol(cols, ['규    격','규격','Spec','SPEC','specification']));
+  populateColSelect('bom-maker-col', cols, guessCol(cols, ['Maker','MAKER','maker','제조사']));
+  // 단위수량: "사용 안 함" 옵션 포함해서 populate
+  const qtyGuess = guessCol(cols, ['단위수량','수량','QTY','Qty','qty','QUANTITY','단 위 수 량']);
+  const qtySel = document.getElementById('bom-qty-col');
+  qtySel.innerHTML = '<option value="">-- 사용 안 함 --</option>' +
+    cols.map(c => `<option value="${c}" ${c===qtyGuess?'selected':''}>${c}</option>`).join('');
+  document.getElementById('config-section').style.display = 'block';
+}
+
+function onCoordSheetChange() {
+  if (!coordWorkbook) return;
+  const idx = +document.getElementById('coord-sheet').value;
+  const headerRow = +document.getElementById('coord-header-row').value;
+  const sheet = coordWorkbook.Sheets[coordWorkbook.SheetNames[idx]];
+  coordData = XLSX.utils.sheet_to_json(sheet, { defval: '', range: headerRow });
+  if (coordData.length === 0) return;
+  const cols = Object.keys(coordData[0]);
+  populateColSelect('coord-ref-col', cols, guessCol(cols, ['RefDes','Ref Des','ref','REFDES','Ref_Des']));
+  populateColSelect('coord-decal-col', cols, guessCol(cols, ['PCB Decal','Decal','decal','Footprint','DECAL']));
+  populateColSelect('coord-layer-col', cols, guessCol(cols, ['Layer','layer','LAYER']));
+  document.getElementById('config-section').style.display = 'block';
+}
+
+function guessCol(cols, candidates) {
+  for (const c of candidates) {
+    const found = cols.find(col => col.trim().toLowerCase() === c.toLowerCase());
+    if (found) return found;
+  }
+  // partial match
+  for (const c of candidates) {
+    const found = cols.find(col => col.toLowerCase().includes(c.toLowerCase()));
+    if (found) return found;
+  }
+  return cols[0];
+}
+
+function populateColSelect(selId, cols, defaultVal) {
+  const sel = document.getElementById(selId);
+  sel.innerHTML = cols.map(c => `<option value="${c}" ${c===defaultVal?'selected':''}>${c}</option>`).join('');
+}
+
+// ─── Check Ready ──────────────────────────────────────────
+function checkReady() {
+  document.getElementById('match-btn').disabled = !(bomWorkbook && coordWorkbook);
+}
+
+// ─── Core Matching Logic ──────────────────────────────────
+function runMatch() {
+  // Re-read coord with current header row
+  onCoordSheetChange();
+
+  const bomLocCol  = document.getElementById('bom-loc-col').value;
+  const bomNameCol = document.getElementById('bom-name-col').value;
+  const bomSpecCol = document.getElementById('bom-spec-col').value;
+  const bomMakerCol = document.getElementById('bom-maker-col').value;
+  const bomQtyCol  = document.getElementById('bom-qty-col').value;
+  const coordRefCol   = document.getElementById('coord-ref-col').value;
+  const coordDecalCol = document.getElementById('coord-decal-col').value;
+  const coordLayerCol = document.getElementById('coord-layer-col').value;
+
+  // 제외 접두사 목록 수집 (FID/FD는 별도 처리)
+  const exclPrefixes = [];
+  if (document.getElementById('excl-tp').checked)    exclPrefixes.push('TP');
+  if (document.getElementById('excl-clamp').checked) exclPrefixes.push('CLAMP','CLP','HOLE','MTG','MH');
+  const exclFid = document.getElementById('excl-fid').checked;
+  const customExcl = document.getElementById('excl-custom').value;
+  if (customExcl.trim()) {
+    customExcl.split(',').map(s=>s.trim().toUpperCase()).filter(Boolean).forEach(p=>exclPrefixes.push(p));
+  }
+  function isExcluded(ref) {
+    const r = ref.toUpperCase();
+    return exclPrefixes.some(p => r.startsWith(p));
+  }
+  const exclClamp = document.getElementById('excl-clamp').checked;
+  function isFiducial(row) {
+    // Decal 또는 Part Type에 FIDUCIAL 문자열이 있으면 피듀셜로 판단
+    const decal = String(row[coordDecalCol] || '').toUpperCase();
+    const ptype = String(row['Part Type'] || row['PartType'] || '').toUpperCase();
+    return decal.includes('FIDUCIAL') || ptype.includes('FIDUCIAL');
+  }
+  function isMountingHole(row) {
+    // Part Type이 HOLE이거나 Decal에 HOLE 포함 시 고정홀로 판단
+    const decal = String(row[coordDecalCol] || '').toUpperCase();
+    const ptype = String(row['Part Type'] || row['PartType'] || '').toUpperCase();
+    return ptype === 'HOLE' || decal.includes('HOLE');
+  }
+
+  // Build coord lookup map (제외 항목 스킵)
+  const coordMap = {};
+  let excludedCount = 0;
+  for (const row of coordData) {
+    const ref = String(row[coordRefCol] || '').trim();
+    if (!ref) continue;
+    if (isExcluded(ref)) { excludedCount++; continue; }
+    // FID 제외: Decal/Part Type의 FIDUCIAL 여부로 판단
+    if (exclFid && isFiducial(row)) { excludedCount++; continue; }
+    // 고정홀 제외: Part Type=HOLE 또는 Decal에 HOLE 포함
+    if (exclClamp && isMountingHole(row)) { excludedCount++; continue; }
+    coordMap[ref.toUpperCase()] = row;
+  }
+  if (excludedCount > 0) {
+    document.getElementById('status-msg').textContent = `⏳ 매칭 중... (${excludedCount}개 제외됨)`;
+  }
+
+  // Expand BOM locations
+  const bomExpanded = {};  // refdes → bom row (마지막 등장 기준)
+  const bomSeen = {};      // refdes → 첫 등장 row (중복 감지용)
+  const skippedTokens = [];
+  const qtyMismatches = [];
+  const dupRefdes = {};    // refdes → [첫 row, 중복 row, ...]
+  const REFDES_PAT = /^[A-Za-z]{1,6}\d/;
+
+  for (const row of bomData) {
+    const locRaw = String(row[bomLocCol] || '').trim();
+    if (!locRaw) continue;
+    const parts = locRaw.split(',').map(s => s.trim()).filter(Boolean);
+    const validTokens = [];
+    for (const part of parts) {
+      if (/^FOR$/i.test(part)) continue;
+      const cleaned = part.replace(/^FOR\s+/i, '').trim();
+      if (!cleaned) continue;
+      if (!REFDES_PAT.test(cleaned)) {
+        skippedTokens.push({ token: cleaned, location: locRaw, name: row[bomNameCol] || '' });
+        continue;
+      }
+      validTokens.push(cleaned);
+      const key = cleaned.toUpperCase();
+      if (bomSeen[key]) {
+        // 중복 감지 — 첫 등장 + 현재 행 기록
+        if (!dupRefdes[key]) {
+          dupRefdes[key] = {
+            refdes: cleaned,
+            rows: [
+              { location: String(bomSeen[key][bomLocCol]||''), name: String(bomSeen[key][bomNameCol]||''), spec: String(bomSeen[key][bomSpecCol]||'') }
+            ]
+          };
+        }
+        dupRefdes[key].rows.push({
+          location: locRaw,
+          name: row[bomNameCol] || '',
+          spec: row[bomSpecCol] || ''
+        });
+      } else {
+        bomSeen[key] = row;
+      }
+      bomExpanded[key] = { ...row, _refdes: cleaned };
+    }
+    // 수량 검증
+    if (bomQtyCol && validTokens.length > 0) {
+      const qty = parseInt(row[bomQtyCol], 10);
+      if (!isNaN(qty) && qty > 0 && qty !== validTokens.length) {
+        qtyMismatches.push({
+          location: locRaw,
+          name: row[bomNameCol] || '',
+          spec: row[bomSpecCol] || '',
+          refCount: validTokens.length,
+          qty,
+          tokens: validTokens
+        });
+      }
+    }
+  }
+  const dupList = Object.values(dupRefdes);
+
+  // Build result rows
+  allRows = [];
+  const coordUsed = new Set();
+
+  // BOM entries
+  for (const [refUpper, bomRow] of Object.entries(bomExpanded)) {
+    const coordRow = coordMap[refUpper];
+    if (coordRow) {
+      coordUsed.add(refUpper);
+      const bomSpec  = bomRow[bomSpecCol] || '';
+      const decal    = coordRow[coordDecalCol] || '';
+      const sizeChk  = checkSizeMatch(bomSpec, decal);
+      const status   = sizeChk.match ? 'matched' : 'mismatch';
+      allRows.push({
+        refdes: bomRow._refdes,
+        status,
+        bomName: bomRow[bomNameCol] || '',
+        bomSpec,
+        bomMaker: bomRow[bomMakerCol] || '',
+        decal,
+        layer: coordRow[coordLayerCol] || '',
+        posX: coordRow['Position X'] || coordRow['Pos X'] || coordRow['X'] || '',
+        posY: coordRow['Position Y'] || coordRow['Pos Y'] || coordRow['Y'] || '',
+        orient: coordRow['Orient'] || coordRow['Orientation'] || '',
+        smd: coordRow['SMD'] || '',
+        partType: coordRow['Part Type'] || coordRow['PartType'] || '',
+        bomSize: sizeChk.bomSize,
+        coordSize: sizeChk.coordSize
+      });
+    } else {
+      allRows.push({
+        refdes: bomRow._refdes,
+        status: 'bom-only',
+        bomName: bomRow[bomNameCol] || '',
+        bomSpec: bomRow[bomSpecCol] || '',
+        bomMaker: bomRow[bomMakerCol] || '',
+        decal:'',layer:'',posX:'',posY:'',orient:'',smd:'',partType:'',
+        bomSize: null, coordSize: null
+      });
+    }
+  }
+
+  // Coord-only entries
+  for (const [refUpper, coordRow] of Object.entries(coordMap)) {
+    if (!coordUsed.has(refUpper)) {
+      allRows.push({
+        refdes: coordRow[coordRefCol] || refUpper,
+        status: 'coord-only',
+        bomName:'',bomSpec:'',bomMaker:'',
+        decal: coordRow[coordDecalCol] || '',
+        layer: coordRow[coordLayerCol] || '',
+        posX: coordRow['Position X'] || coordRow['Pos X'] || coordRow['X'] || '',
+        posY: coordRow['Position Y'] || coordRow['Pos Y'] || coordRow['Y'] || '',
+        orient: coordRow['Orient'] || coordRow['Orientation'] || '',
+        smd: coordRow['SMD'] || '',
+        partType: coordRow['Part Type'] || coordRow['PartType'] || ''
+      });
+    }
+  }
+
+  // Sort: matched first, then bom-only, then coord-only
+  const order = { matched:0, 'bom-only':1, 'coord-only':2 };
+  allRows.sort((a,b) => {
+    if (order[a.status] !== order[b.status]) return order[a.status]-order[b.status];
+    return a.refdes.localeCompare(b.refdes, undefined, {numeric:true});
+  });
+
+  // Stats
+  const matched   = allRows.filter(r=>r.status==='matched').length;
+  const mismatch  = allRows.filter(r=>r.status==='mismatch').length;
+  const bomOnly   = allRows.filter(r=>r.status==='bom-only').length;
+  const coordOnly = allRows.filter(r=>r.status==='coord-only').length;
+  const totalBom  = matched + mismatch + bomOnly;
+  const pct       = totalBom ? Math.round((matched+mismatch)/totalBom*100) : 0;
+
+  document.getElementById('s-total').textContent    = totalBom;
+  document.getElementById('s-matched').textContent  = matched;
+  document.getElementById('s-mismatch').textContent = mismatch;
+  document.getElementById('s-bom-only').textContent = bomOnly;
+  document.getElementById('s-coord-only').textContent = coordOnly;
+  document.getElementById('s-coverage').textContent = pct + '%';
+
+  document.getElementById('summary').style.display    = 'grid';
+  document.getElementById('filter-bar').style.display = 'flex';
+  document.getElementById('export-btn').disabled      = false;
+  const exclNote = excludedCount > 0 ? ` | 좌표 제외: ${excludedCount}개` : '';
+  const skipNote = skippedTokens.length > 0 ? ` | 비PCB 스킵: ${skippedTokens.length}개` : '';
+  const qtyNote  = qtyMismatches.length > 0 ? ` | 수량 불일치: ${qtyMismatches.length}개` : '';
+  const dupNote  = dupList.length > 0 ? ` | BOM 중복: ${dupList.length}개` : '';
+  document.getElementById('status-msg').textContent   = `✅ 매칭 완료: 총 ${allRows.length}개 항목${exclNote}${skipNote}${qtyNote}${dupNote}`;
+
+  // 스킵된 BOM 토큰 패널 표시
+  const skipPanel = document.getElementById('skip-panel');
+  if (skippedTokens.length > 0) {
+    document.getElementById('skip-count').textContent = skippedTokens.length;
+    document.getElementById('skip-list').innerHTML = skippedTokens.map(s =>
+      `<span style="display:inline-flex;align-items:center;gap:4px;background:#fff3e0;border:1px solid #ffcc80;
+        border-radius:6px;padding:3px 9px;font-size:0.8rem;font-family:monospace;color:#e65100;"
+        title="Location: ${s.location} | 품명: ${s.name}">
+        ⚠ ${s.token}
+      </span>`
+    ).join('');
+    skipPanel.style.display = 'block';
+  } else {
+    skipPanel.style.display = 'none';
+  }
+
+  // 수량 불일치 패널 표시
+  const qtyPanel = document.getElementById('qty-panel');
+  if (qtyMismatches.length > 0) {
+    document.getElementById('qty-count').textContent = qtyMismatches.length;
+    document.getElementById('qty-list').innerHTML = qtyMismatches.map(q => `
+      <tr>
+        <td style="padding:7px 12px;font-family:monospace;font-size:0.8rem;color:#333;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${q.location}">${q.location}</td>
+        <td style="padding:7px 12px;font-size:0.8rem;color:#555;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${q.name}">${q.name}</td>
+        <td style="padding:7px 12px;font-size:0.8rem;color:#555;" title="${q.spec}">${q.spec.length>30?q.spec.slice(0,30)+'…':q.spec}</td>
+        <td style="padding:7px 12px;text-align:center;font-weight:700;color:#1565c0;">${q.refCount}개</td>
+        <td style="padding:7px 12px;text-align:center;font-weight:700;color:#c62828;">${q.qty}개</td>
+        <td style="padding:7px 12px;text-align:center;">
+          <span style="background:#ffebee;color:#c62828;border-radius:10px;padding:2px 8px;font-size:0.75rem;font-weight:700;">
+            ${q.refCount > q.qty ? '+' : ''}${q.refCount - q.qty}
+          </span>
+        </td>
+      </tr>`
+    ).join('');
+    qtyPanel.style.display = 'block';
+  } else {
+    qtyPanel.style.display = 'none';
+  }
+
+  // BOM 중복 RefDes 패널
+  const dupPanel = document.getElementById('dup-panel');
+  if (dupList.length > 0) {
+    document.getElementById('dup-count').textContent = dupList.length;
+    document.getElementById('dup-list').innerHTML = dupList.map(d => `
+      <div style="background:white;border:1px solid #ce93d8;border-radius:8px;padding:10px 14px;margin-bottom:8px;">
+        <div style="font-weight:700;font-family:monospace;color:#6a1b9a;margin-bottom:6px;">⚠ ${d.refdes}</div>
+        ${d.rows.map((r, i) => `
+          <div style="font-size:0.78rem;color:#555;padding:3px 0;border-top:${i===0?'none':'1px solid #f3e5f5'};">
+            <span style="color:#888;margin-right:6px;">${i===0?'첫 등장':'중복 '+i}</span>
+            <span style="font-family:monospace;color:#333;">${r.location}</span>
+            ${r.name ? `<span style="color:#999;margin-left:8px;">${r.name}</span>` : ''}
+            ${r.spec ? `<span style="color:#bbb;margin-left:6px;font-size:0.75rem;">${r.spec.length>40?r.spec.slice(0,40)+'…':r.spec}</span>` : ''}
+          </div>`).join('')}
+      </div>`
+    ).join('');
+    dupPanel.style.display = 'block';
+  } else {
+    dupPanel.style.display = 'none';
+  }
+
+  setFilter('all', document.querySelector('.filter-btn[data-filter="all"]'));
+}
+
+// ─── Filter & Render ──────────────────────────────────────
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilter();
+}
+
+function applyFilter() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  let rows = allRows;
+  if (currentFilter !== 'all') rows = rows.filter(r => r.status === currentFilter);
+  if (q) rows = rows.filter(r => r.refdes.toLowerCase().includes(q) ||
+    r.bomName.toLowerCase().includes(q) || r.decal.toLowerCase().includes(q));
+  renderTable(rows);
+}
+
+function renderTable(rows) {
+  const tbody = document.getElementById('result-body');
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="12"><div class="empty-state"><div class="icon">🔎</div><p>표시할 항목이 없습니다</p></div></td></tr>`;
+    return;
+  }
+  const statusLabel = { matched:'✅ 매칭', mismatch:'⚡ 규격불일치', 'bom-only':'❌ BOM만', 'coord-only':'⚠️ 좌표만' };
+  const statusClass = { matched:'badge-matched', mismatch:'badge-mismatch', 'bom-only':'badge-bom-only', 'coord-only':'badge-coord-only' };
+
+  tbody.innerHTML = rows.map(r => {
+    const isMismatch = r.status === 'mismatch';
+    // 규격 불일치 시 해당 셀에 강조 표시
+    const specCell  = isMismatch
+      ? `<td class="size-mismatch" title="BOM: ${r.bomSize}  |  Coord: ${r.coordSize}">${r.bomSpec} <span style="color:#e040fb">→${r.bomSize}</span></td>`
+      : `<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.bomSpec}">${r.bomSpec || '<span class="na">-</span>'}</td>`;
+    const decalCell = isMismatch
+      ? `<td class="size-mismatch" title="BOM: ${r.bomSize}  |  Coord: ${r.coordSize}">${r.decal} <span style="color:#e040fb">→${r.coordSize}</span></td>`
+      : `<td>${r.decal || '<span class="na">-</span>'}</td>`;
+    return `
+    <tr class="${r.status}">
+      <td><span class="refdes">${r.refdes}</span></td>
+      <td><span class="status-badge ${statusClass[r.status]}">${statusLabel[r.status]}</span></td>
+      <td>${r.bomName || '<span class="na">-</span>'}</td>
+      ${specCell}
+      <td>${r.bomMaker || '<span class="na">-</span>'}</td>
+      ${decalCell}
+      <td>${r.layer || '<span class="na">-</span>'}</td>
+      <td style="font-family:monospace">${r.posX !== '' ? Number(r.posX).toFixed(2) : '<span class="na">-</span>'}</td>
+      <td style="font-family:monospace">${r.posY !== '' ? Number(r.posY).toFixed(2) : '<span class="na">-</span>'}</td>
+      <td>${r.orient !== '' ? r.orient + '°' : '<span class="na">-</span>'}</td>
+      <td>${r.smd || '<span class="na">-</span>'}</td>
+      <td>${r.partType || '<span class="na">-</span>'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── Export to Excel ──────────────────────────────────────
+function exportExcel() {
+  const statusKo = { matched:'매칭', mismatch:'규격불일치', 'bom-only':'BOM만', 'coord-only':'좌표만' };
+  const data = allRows.map(r => ({
+    'RefDes': r.refdes,
+    '상태': statusKo[r.status],
+    '품명(BOM)': r.bomName,
+    '규격(BOM)': r.bomSpec,
+    'BOM 추출 사이즈': r.bomSize || '',
+    'Coord 추출 사이즈': r.coordSize || '',
+    'Maker': r.bomMaker,
+    'PCB Decal': r.decal,
+    'Layer': r.layer,
+    'Position X': r.posX,
+    'Position Y': r.posY,
+    'Orient': r.orient,
+    'SMD': r.smd,
+    'Part Type': r.partType
+  }));
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(data);
+
+  // Column widths
+  ws['!cols'] = [
+    {wch:12},{wch:10},{wch:20},{wch:35},{wch:14},{wch:14},
+    {wch:15},{wch:22},{wch:8},{wch:10},{wch:10},{wch:8},{wch:6},{wch:20}
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, '매칭결과');
+
+  // Summary sheet
+  const matched   = allRows.filter(r=>r.status==='matched').length;
+  const bomOnly   = allRows.filter(r=>r.status==='bom-only').length;
+  const coordOnly = allRows.filter(r=>r.status==='coord-only').length;
+  const totalBom  = matched + bomOnly;
+  const mismatches = allRows.filter(r=>r.status==='mismatch').length;
+  const summaryData = [
+    ['구분','건수'],
+    ['BOM 전체 RefDes', totalBom],
+    ['매칭 성공 (규격 일치)', matched],
+    ['규격 불일치 (RefDes 매칭, 사이즈 다름)', mismatches],
+    ['BOM만 있음 (좌표 없음)', bomOnly],
+    ['좌표만 있음 (BOM 없음)', coordOnly],
+    ['RefDes 매칭률', totalBom ? ((matched+mismatches)/totalBom*100).toFixed(1)+'%' : '-'],
+    ['규격 완전 일치율', totalBom ? (matched/totalBom*100).toFixed(1)+'%' : '-']
+  ];
+  const ws2 = XLSX.utils.aoa_to_sheet(summaryData);
+  ws2['!cols'] = [{wch:25},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, ws2, '요약');
+
+  const now = new Date();
+  const ts = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, `BOM_Coord_Match_${ts}.xlsx`);
+}
+
+// ─── Reset ────────────────────────────────────────────────
+function resetAll() {
+  bomWorkbook = coordWorkbook = null;
+  bomData = []; coordData = []; allRows = [];
+  ['bom-input','coord-input'].forEach(id => document.getElementById(id).value='');
+  ['bom-drop','coord-drop'].forEach(id => {
+    document.getElementById(id).classList.remove('has-file','drag-over');
+  });
+  ['bom-filename','coord-filename'].forEach(id => document.getElementById(id).textContent='');
+  ['bom-card','coord-card'].forEach(id => document.getElementById(id).classList.remove('loaded'));
+  ['bom-badge','coord-badge'].forEach(id => document.getElementById(id).textContent='미업로드');
+  ['bom-sheet-sel','coord-sheet-sel','config-section'].forEach(id => {
+    document.getElementById(id).style.display='none';
+  });
+  document.getElementById('summary').style.display='none';
+  document.getElementById('filter-bar').style.display='none';
+  document.getElementById('match-btn').disabled=true;
+  document.getElementById('export-btn').disabled=true;
+  document.getElementById('status-msg').textContent='';
+  document.getElementById('result-body').innerHTML=`
+    <tr><td colspan="12"><div class="empty-state"><div class="icon">📂</div>
+    <p>BOM 파일과 좌표 데이터 파일을 업로드한 후 매칭을 실행하세요</p></div></td></tr>`;
+  currentFilter='all';
+  document.querySelectorAll('.filter-btn').forEach((b,i)=>{ b.classList.toggle('active',i===0); });
+}
+</script>
+</body>
+</html>
