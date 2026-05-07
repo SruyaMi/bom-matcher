@@ -799,19 +799,32 @@ function extractInfo(text, isCoord) {
   if (m) return { type:'chip', val: m[1] };
   m = DIODE_PKG_PAT.exec(t);
   if (m) return { type:'pkg', val: normPkg(m[1]) };
+  // 피치: coord는 _P15_ 우선, 못 찾으면 BOM 패턴도 시도
   m = (isCoord ? COORD_PITCH : BOM_PITCH).exec(t);
   if (m) return { type:'pitch', val: normNum(m[1]) };
+  if (isCoord) {
+    m = BOM_PITCH.exec(t); // 언더스코어 없는 형식 fallback
+    if (m) return { type:'pitch', val: normNum(m[1]) };
+  }
   return null;
 }
 
 function checkSizeMatch(bomSpec, coordDecal) {
   const bi = extractInfo(bomSpec,  false);
   const ci = extractInfo(coordDecal, true);
-  if (!bi || !ci || bi.type !== ci.type)
-    return { match: true,  bomSize: bi?.val || null, coordSize: ci?.val || null };
+  // 양쪽 다 감지 못하면 비교 불가 → 매칭 처리
+  if (!bi && !ci) return { match: true, bomSize: null, coordSize: null };
+  // 한쪽만 감지 → 비교 불가 → 매칭 처리 (false positive 방지)
+  if (!bi || !ci) return { match: true, bomSize: bi?.val||null, coordSize: ci?.val||null };
+  // 타입 다름 (칩사이즈 vs 피치 등) → 비교 불가 → 매칭 처리
+  if (bi.type !== ci.type) return { match: true, bomSize: bi.val, coordSize: ci.val };
+  // 같은 타입 → 값 비교
   const match = (bi.val === ci.val);
   return { match, bomSize: bi.val, coordSize: ci.val };
 }
+
+// COORD_PITCH 보조: BOM_PITCH 패턴도 coord에서 시도 (언더스코어 없는 형식 대비)
+const COORD_PITCH_ALT = /\bP(?!HI|CB|IN|CF|VF)(\d+(?:\.\d+)?)(?:mm)?(?=$|[_,)\s/\\])/i;
 
 // ─── Drag & Drop Setup ───────────────────────────────────
 function setupDrop(dropId, inputId, handler) {
@@ -824,7 +837,12 @@ function setupDrop(dropId, inputId, handler) {
     e.preventDefault(); zone.classList.remove('drag-over');
     if (e.dataTransfer.files[0]) handler(e.dataTransfer.files[0]);
   });
-  input.addEventListener('change', () => { if (input.files[0]) handler(input.files[0]); });
+  input.addEventListener('change', () => {
+    if (input.files[0]) {
+      handler(input.files[0]);
+      input.value = ''; // 같은 파일명 재업로드 허용
+    }
+  });
 }
 
 setupDrop('bom-drop', 'bom-input', f => readFile(f, 'bom'));
@@ -894,19 +912,22 @@ function onCoordSheetChange() {
   if (coordData.length === 0) return;
   const cols = Object.keys(coordData[0]);
   populateColSelect('coord-ref-col', cols, guessCol(cols, ['RefDes','Ref Des','ref','REFDES','Ref_Des']));
-  populateColSelect('coord-decal-col', cols, guessCol(cols, ['PCB Decal','Decal','decal','Footprint','DECAL']));
+  populateColSelect('coord-decal-col', cols, guessCol(cols, ['PCB Decal','Decal','decal','Footprint','DECAL','Part Type','PartType','Component','Pattern','Decal Name','footprint','FOOTPRINT']));
   populateColSelect('coord-layer-col', cols, guessCol(cols, ['Layer','layer','LAYER']));
   document.getElementById('config-section').style.display = 'block';
 }
 
 function guessCol(cols, candidates) {
+  // 공백 완전 제거 후 비교 (한글 헤더의 내부 공백 차이 무시)
+  const norm = s => s.trim().toLowerCase().replace(/\s+/g, '');
+  // 1단계: 공백 무시 완전 일치
   for (const c of candidates) {
-    const found = cols.find(col => col.trim().toLowerCase() === c.toLowerCase());
+    const found = cols.find(col => norm(col) === norm(c));
     if (found) return found;
   }
-  // partial match
+  // 2단계: 공백 무시 부분 일치
   for (const c of candidates) {
-    const found = cols.find(col => col.toLowerCase().includes(c.toLowerCase()));
+    const found = cols.find(col => norm(col).includes(norm(c)) || norm(c).includes(norm(col)));
     if (found) return found;
   }
   return cols[0];
@@ -920,12 +941,25 @@ function populateColSelect(selId, cols, defaultVal) {
 // ─── Check Ready ──────────────────────────────────────────
 function checkReady() {
   document.getElementById('match-btn').disabled = !(bomWorkbook && coordWorkbook);
+  // 이미 매칭 결과가 있으면 새 파일 올릴 때 자동 재실행
+  if (bomWorkbook && coordWorkbook && allRows.length > 0) {
+    runMatch();
+  }
 }
 
 // ─── Core Matching Logic ──────────────────────────────────
 function runMatch() {
   // Re-read coord with current header row
   onCoordSheetChange();
+
+  // ── 선택된 컬럼 디버그 출력 ──
+  const _dbgSpec  = document.getElementById('bom-spec-col').value;
+  const _dbgDecal = document.getElementById('coord-decal-col').value;
+  console.log('[매칭] BOM 규격 컬럼:', _dbgSpec, '/ Coord Decal 컬럼:', _dbgDecal);
+  if (!_dbgSpec || !_dbgDecal) {
+    alert('⚠️ BOM 규격 또는 Coord Decal 컬럼이 선택되지 않았습니다.\n설정을 확인해주세요.');
+    return;
+  }
 
   const bomLocCol  = document.getElementById('bom-loc-col').value;
   // BOM 품명 제외 키워드
