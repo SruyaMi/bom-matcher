@@ -86,7 +86,7 @@
 
   /* Summary Cards */
   .summary-cards {
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 24px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; margin-bottom: 24px;
   }
   .card {
     background: white; border-radius: 10px; padding: 16px;
@@ -98,6 +98,7 @@
   .card.bom-only { border-color: #ef5350; }
   .card.coord-only { border-color: #ff9800; }
   .card.mismatch { border-color: #e040fb; }
+  .card.nc { border-color: #78909c; }
   .card.coverage { border-color: #9c27b0; }
   .card .num { font-size: 1.8rem; font-weight: 700; color: #222; }
   .card .label { font-size: 0.75rem; color: #888; margin-top: 4px; }
@@ -105,6 +106,7 @@
   .card.bom-only .num { color: #c62828; }
   .card.coord-only .num { color: #e65100; }
   .card.mismatch .num { color: #ad1457; }
+  .card.nc .num { color: #37474f; }
   .card.coverage .num { color: #6a1b9a; font-size: 1.5rem; }
 
   /* Filter Bar */
@@ -156,11 +158,13 @@
   tr.bom-only td:first-child { border-left: 3px solid #ef5350; }
   tr.coord-only td:first-child { border-left: 3px solid #ff9800; }
   tr.mismatch td:first-child { border-left: 3px solid #e040fb; }
+  tr.nc td:first-child { border-left: 3px solid #78909c; }
 
   tr.matched { background: #f9fff9; }
   tr.bom-only { background: #fff5f5; }
   tr.coord-only { background: #fff8f0; }
   tr.mismatch { background: #fdf0ff; }
+  tr.nc { background: #f5f5f5; opacity: 0.75; }
 
   .status-badge {
     display: inline-block; padding: 2px 8px; border-radius: 12px;
@@ -170,6 +174,18 @@
   .badge-bom-only { background: #ffebee; color: #c62828; }
   .badge-coord-only { background: #fff3e0; color: #e65100; }
   .badge-mismatch { background: #fce4ec; color: #880e4f; }
+  .badge-nc { background: #eceff1; color: #37474f; }
+
+  .filter-btn.f-nc.active { background: #607d8b; border-color: #607d8b; }
+
+  .nc-toggle-btn {
+    padding: 1px 7px; border: 1px solid #90a4ae; border-radius: 10px;
+    font-size: 0.68rem; cursor: pointer; background: #eceff1; color: #546e7a;
+    transition: all 0.15s; margin-left: 6px; white-space: nowrap; vertical-align: middle;
+    font-weight: 600;
+  }
+  .nc-toggle-btn:hover { background: #b0bec5; color: #263238; }
+  .nc-toggle-btn.is-nc { background: #607d8b; color: white; border-color: #455a64; }
 
   /* Mismatch highlight on specific cells */
   td.size-mismatch {
@@ -370,6 +386,79 @@
   .tag-fix  { background: #fce4ec; color: #c62828; }
   .tag-ui   { background: #e8f5e9; color: #2e7d32; }
 
+/* ── 피드백 모달 ── */
+#feedback-modal {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55); z-index: 9999;
+  align-items: center; justify-content: center;
+}
+#feedback-modal.open { display: flex; }
+.fb-box {
+  background: white; border-radius: 16px;
+  width: min(500px, 92vw);
+  box-shadow: 0 12px 48px rgba(0,0,0,0.28);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.fb-header {
+  background: linear-gradient(135deg,#1a237e,#3949ab);
+  color: white; padding: 18px 22px;
+  display: flex; align-items: center; gap: 10px;
+}
+.fb-header h3 { font-size: 1rem; font-weight: 700; flex: 1; margin: 0; }
+.fb-close {
+  background: rgba(255,255,255,0.15); border: none; color: white;
+  border-radius: 8px; padding: 5px 11px; cursor: pointer; font-size: 1rem;
+  transition: background 0.15s;
+}
+.fb-close:hover { background: rgba(255,255,255,0.28); }
+.fb-body { padding: 22px; }
+.fb-body label { font-size: 0.82rem; font-weight: 600; color: #555; display: block; margin-bottom: 6px; }
+.fb-body select, .fb-body textarea, .fb-body input[type=text] {
+  width: 100%; border: 1px solid #ddd; border-radius: 8px;
+  padding: 9px 12px; font-size: 0.85rem; font-family: inherit;
+  outline: none; transition: border-color 0.15s;
+}
+.fb-body select:focus, .fb-body textarea:focus { border-color: #3949ab; }
+.fb-body textarea { resize: vertical; min-height: 110px; line-height: 1.6; }
+.fb-row { margin-bottom: 14px; }
+.fb-footer {
+  padding: 14px 22px; border-top: 1px solid #eee;
+  display: flex; gap: 10px; justify-content: flex-end;
+}
+.fb-send-btn {
+  background: linear-gradient(135deg,#1a237e,#3949ab);
+  color: white; border: none; border-radius: 8px;
+  padding: 10px 24px; font-size: 0.9rem; font-weight: 700;
+  cursor: pointer; transition: opacity 0.15s;
+  display: flex; align-items: center; gap: 7px;
+}
+.fb-send-btn:hover { opacity: 0.88; }
+.fb-cancel-btn {
+  background: #f5f5f5; color: #555; border: 1px solid #ddd;
+  border-radius: 8px; padding: 10px 18px; font-size: 0.85rem;
+  cursor: pointer; transition: background 0.15s;
+}
+.fb-cancel-btn:hover { background: #e0e0e0; }
+.fb-note {
+  font-size: 0.75rem; color: #aaa; margin-top: 8px; line-height: 1.5;
+}
+
+/* ── 피드백 토스트 알림 ── */
+#fb-toast {
+  position: fixed; bottom: 32px; left: 50%;
+  transform: translateX(-50%) translateY(70px);
+  background: #2e7d32; color: white;
+  padding: 13px 26px; border-radius: 30px;
+  font-size: 0.88rem; font-weight: 600;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.22);
+  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.35s;
+  opacity: 0; z-index: 99999; white-space: nowrap;
+  display: flex; align-items: center; gap: 8px;
+  pointer-events: none;
+}
+#fb-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+#fb-toast.error { background: #c62828; }
+
 /* ── 탭 네비게이션 ── */
 #tab-nav {
   background: #1a237e;
@@ -485,7 +574,7 @@
     <button onclick="openHistoryPanel()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.9);border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.22)'" onmouseout="this.style.background='rgba(255,255,255,0.12)'">🔒 개발 히스토리</button>
     <div style="width:1px;height:20px;background:rgba(255,255,255,0.2);margin:0 4px;"></div>
     <div style="text-align:right;opacity:0.7;font-size:0.78rem;line-height:1.6;">
-      <div style="font-weight:600;">v2026.05.07</div>
+      <div style="font-weight:600;">v2026.05.14</div>
       <div>JYH</div>
     </div>
   </div>
@@ -494,6 +583,7 @@
 <nav id="tab-nav">
   <button class="tab-btn active" id="tab-btn-match" onclick="switchTab('match')">🔍 좌표데이터·BOM 매칭</button>
   <button class="tab-btn" id="tab-btn-compare" onclick="switchTab('compare')">📊 BOM 버전 비교</button>
+  <button onclick="openFeedback()" style="margin-left:auto;margin-top:8px;margin-bottom:8px;margin-right:4px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.85);border-radius:18px;padding:5px 14px;cursor:pointer;font-size:0.78rem;font-weight:600;transition:all 0.15s;white-space:nowrap;display:flex;align-items:center;gap:5px;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">💡 개선 제안</button>
 </nav>
 
 <div id="page-match">
@@ -619,6 +709,24 @@
         <span style="font-size:0.78rem;color:#aaa;">품명 컬럼 값에 포함된 경우 제외</span>
       </div>
     </div>
+
+    <!-- NC 항목 지정 -->
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid #eee;">
+      <div style="font-size:0.82rem;color:#666;margin-bottom:8px;font-weight:600;">🚫 NC (No Connect) 항목 지정</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;">
+        <div style="flex:1;min-width:260px;">
+          <textarea id="nc-refdes-input" rows="3"
+            placeholder="예: C999, JP1, JP2&#10;쉼표 또는 줄바꿈으로 구분"
+            oninput="onNcInputChange()"
+            style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:0.82rem;font-family:monospace;resize:vertical;line-height:1.5;"></textarea>
+        </div>
+        <div style="font-size:0.78rem;color:#888;line-height:1.6;padding-top:4px;">
+          ㆍ BOM에 없는 좌표 항목 중 NC 처리할 RefDes 입력<br>
+          ㆍ 결과 테이블의 체크박스로도 지정 가능<br>
+          ㆍ NC 항목은 🚫 NC 상태로 별도 표시됨
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Action Row -->
@@ -657,6 +765,10 @@
       <div class="num" id="s-coord-only">-</div>
       <div class="label">좌표에만 있음 ⚠️</div>
     </div>
+    <div class="card nc">
+      <div class="num" id="s-nc">-</div>
+      <div class="label">NC 항목 🚫</div>
+    </div>
     <div class="card coverage">
       <div class="num" id="s-coverage">-</div>
       <div class="label">매칭률</div>
@@ -670,6 +782,7 @@
     <button class="filter-btn f-mismatch" data-filter="mismatch" onclick="setFilter('mismatch',this)">⚡ 규격불일치</button>
     <button class="filter-btn f-bom-only" data-filter="bom-only" onclick="setFilter('bom-only',this)">❌ BOM만</button>
     <button class="filter-btn f-coord-only" data-filter="coord-only" onclick="setFilter('coord-only',this)">⚠️ 좌표만</button>
+    <button class="filter-btn f-nc" data-filter="nc" onclick="setFilter('nc',this)">🚫 NC</button>
     <button class="filter-btn f-dup" data-filter="dup" id="dup-filter-btn" onclick="setFilter('dup',this)">⚠ BOM중복</button>
     <div class="filter-divider"></div>
     <div id="info-btn-group" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"></div>
@@ -774,6 +887,7 @@ let accessoryItems = [];
 let daecheItems = [];
 let nameExclItems = [];
 let inlineEditMode = false;
+let ncRefdes = new Set(); // NC (No Connect) RefDes 집합
 
 // ─── Size / Pitch Extraction ──────────────────────────────
 // 칩 사이즈: 1608, 3216, 2012 등 (4자리 숫자)
@@ -1143,12 +1257,17 @@ function runMatch() {
     }
   }
 
+  // NC RefDes 최신화 (텍스트에어리어 기준)
+  syncNcFromTextarea();
+
   // Coord-only entries
   for (const [refUpper, coordRow] of Object.entries(coordMap)) {
     if (!coordUsed.has(refUpper)) {
+      const refdesVal = coordRow[coordRefCol] || refUpper;
+      const isNc = ncRefdes.has(refdesVal.toUpperCase().trim());
       allRows.push({
-        refdes: coordRow[coordRefCol] || refUpper,
-        status: 'coord-only',
+        refdes: refdesVal,
+        status: isNc ? 'nc' : 'coord-only',
         bomName:'',bomSpec:'',bomMaker:'',
         decal: coordRow[coordDecalCol] || '',
         layer: coordRow[coordLayerCol] || '',
@@ -1161,10 +1280,11 @@ function runMatch() {
     }
   }
 
-  // Sort: matched first, then bom-only, then coord-only
-  const order = { matched:0, 'bom-only':1, 'coord-only':2 };
+  // Sort: matched/mismatch → bom-only → coord-only → nc
+  const order = { matched:0, mismatch:0, 'bom-only':1, 'coord-only':2, nc:3 };
   allRows.sort((a,b) => {
-    if (order[a.status] !== order[b.status]) return order[a.status]-order[b.status];
+    const oa = order[a.status] ?? 0, ob = order[b.status] ?? 0;
+    if (oa !== ob) return oa - ob;
     return a.refdes.localeCompare(b.refdes, undefined, {numeric:true});
   });
 
@@ -1173,6 +1293,7 @@ function runMatch() {
   const mismatch  = allRows.filter(r=>r.status==='mismatch').length;
   const bomOnly   = allRows.filter(r=>r.status==='bom-only').length;
   const coordOnly = allRows.filter(r=>r.status==='coord-only').length;
+  const ncCount   = allRows.filter(r=>r.status==='nc').length;
   const totalBom  = matched + mismatch + bomOnly;
   const pct       = totalBom ? Math.round((matched+mismatch)/totalBom*100) : 0;
 
@@ -1181,6 +1302,7 @@ function runMatch() {
   document.getElementById('s-mismatch').textContent = mismatch;
   document.getElementById('s-bom-only').textContent = bomOnly;
   document.getElementById('s-coord-only').textContent = coordOnly;
+  document.getElementById('s-nc').textContent       = ncCount;
   document.getElementById('s-coverage').textContent = pct + '%';
 
   document.getElementById('summary').style.display    = 'grid';
@@ -1301,6 +1423,101 @@ function closePanel() {
 const HISTORY_PW = '011024';
 let historyUnlocked = false;
 
+// ─── 피드백 설정 ────────────────────────────────────────
+// ⬇ 구글 Apps Script 웹 앱 URL을 여기에 붙여넣으세요
+const FEEDBACK_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzvCF0hIwyGMltnpTYmZSfS76scjNEGEsJ9PiZGqUHQ2IYpwiNjpjXainDgs1wexGw_2g/exec';
+
+// ─── 피드백 모달 ────────────────────────────────────────
+function openFeedback() {
+  document.getElementById('feedback-modal').classList.add('open');
+  setTimeout(() => document.getElementById('fb-content').focus(), 80);
+}
+function closeFeedback() {
+  document.getElementById('feedback-modal').classList.remove('open');
+}
+
+let fbToastTimer = null;
+function showToast(msg, isError = false) {
+  const t = document.getElementById('fb-toast');
+  t.textContent = msg;
+  t.className = 'show' + (isError ? ' error' : '');
+  clearTimeout(fbToastTimer);
+  fbToastTimer = setTimeout(() => { t.className = ''; }, 3200);
+}
+
+function sendFeedback() {
+  const name    = document.getElementById('fb-name').value.trim();
+  const type    = document.getElementById('fb-type').value;
+  const title   = document.getElementById('fb-title').value.trim();
+  const content = document.getElementById('fb-content').value.trim();
+
+  // 이름 필수 체크
+  if (!name) {
+    document.getElementById('fb-name').style.borderColor = '#ef5350';
+    document.getElementById('fb-name').focus();
+    setTimeout(() => document.getElementById('fb-name').style.borderColor = '', 1500);
+    return;
+  }
+  // 내용 필수 체크
+  if (!content) {
+    document.getElementById('fb-content').style.borderColor = '#ef5350';
+    document.getElementById('fb-content').focus();
+    setTimeout(() => document.getElementById('fb-content').style.borderColor = '', 1500);
+    return;
+  }
+
+  // Apps Script 엔드포인트 미설정 시 안내
+  if (!FEEDBACK_ENDPOINT) {
+    showToast('⚠️ FEEDBACK_ENDPOINT가 설정되지 않았습니다', true);
+    return;
+  }
+
+  const payload = {
+    name,
+    type,
+    title,
+    content,
+    version: 'v2026.05.14'
+  };
+
+  // 전송 버튼 로딩 표시
+  const btn = document.querySelector('.fb-send-btn');
+  btn.textContent = '⏳ 전송 중...';
+  btn.disabled = true;
+
+  // Google Apps Script는 no-cors + text/plain 조합으로 전송
+  fetch(FEEDBACK_ENDPOINT, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(payload)
+  })
+  .then(() => {
+    showToast('✅ 피드백이 전송되었습니다! 감사합니다 😊');
+    closeFeedback();
+    document.getElementById('fb-name').value    = '';
+    document.getElementById('fb-title').value   = '';
+    document.getElementById('fb-content').value = '';
+    document.getElementById('fb-type').value    = '기능요청';
+  })
+  .catch(() => {
+    showToast('❌ 전송 실패. 네트워크를 확인해주세요.', true);
+  })
+  .finally(() => {
+    btn.innerHTML = '📨 제출하기';
+    btn.disabled = false;
+  });
+}
+
+// ESC 키로 닫기
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeFeedback();
+});
+// 모달 배경 클릭으로 닫기
+document.getElementById('feedback-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeFeedback();
+});
+
 function openHistoryPanel() {
   if (historyUnlocked) { openPanel('history'); return; }
   document.getElementById('pw-modal').style.display = 'flex';
@@ -1393,6 +1610,7 @@ function applyFilter() {
   const q = document.getElementById('search-input').value.toLowerCase();
   let rows = allRows;
   if (currentFilter === 'dup') rows = rows.filter(r => r.isDup);
+  else if (currentFilter === 'coord-only') rows = rows.filter(r => r.status === 'coord-only'); // NC 제외
   else if (currentFilter !== 'all') rows = rows.filter(r => r.status === currentFilter);
   if (q) rows = rows.filter(r => r.refdes.toLowerCase().includes(q) ||
     r.bomName.toLowerCase().includes(q) || r.decal.toLowerCase().includes(q));
@@ -1405,13 +1623,15 @@ function renderTable(rows) {
     tbody.innerHTML = `<tr><td colspan="12"><div class="empty-state"><div class="icon">🔎</div><p>표시할 항목이 없습니다</p></div></td></tr>`;
     return;
   }
-  const statusLabel = { matched:'✅ 매칭', mismatch:'⚡ 규격불일치', 'bom-only':'❌ BOM만', 'coord-only':'⚠️ 좌표만' };
-  const statusClass = { matched:'badge-matched', mismatch:'badge-mismatch', 'bom-only':'badge-bom-only', 'coord-only':'badge-coord-only' };
+  const statusLabel = { matched:'✅ 매칭', mismatch:'⚡ 규격불일치', 'bom-only':'❌ BOM만', 'coord-only':'⚠️ 좌표만', nc:'🚫 NC' };
+  const statusClass = { matched:'badge-matched', mismatch:'badge-mismatch', 'bom-only':'badge-bom-only', 'coord-only':'badge-coord-only', nc:'badge-nc' };
 
   const ec = inlineEditMode ? 'true' : 'false';
   const eC = inlineEditMode ? ' editable-cell' : '';
   tbody.innerHTML = rows.map(r => {
     const isMismatch = r.status === 'mismatch';
+    const isCoordOnly = r.status === 'coord-only';
+    const isNc = r.status === 'nc';
     const specCell  = isMismatch
       ? `<td class="size-mismatch${eC}" data-refdes="${r.refdes}" data-field="bomSpec" contenteditable="${ec}" title="BOM: ${r.bomSize}  |  Coord: ${r.coordSize}" onblur="saveEdit(this)">${r.bomSpec} <span style="color:#e040fb">→${r.bomSize}</span></td>`
       : `<td class="${eC.trim()}" data-refdes="${r.refdes}" data-field="bomSpec" contenteditable="${ec}" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.bomSpec}" onblur="saveEdit(this)">${r.bomSpec || ''}</td>`;
@@ -1419,9 +1639,13 @@ function renderTable(rows) {
     const decalCell = isMismatch
       ? `<td class="size-mismatch" title="BOM: ${r.bomSize}  |  Coord: ${r.coordSize}">${r.decal} <span style="color:#e040fb">→${r.coordSize}</span></td>`
       : `<td>${r.decal || '<span class="na">-</span>'}</td>`;
+    // NC 토글 버튼 (좌표만 / NC 행만 표시)
+    const ncBtn = (isCoordOnly || isNc)
+      ? `<button class="nc-toggle-btn${isNc ? ' is-nc' : ''}" onclick="toggleNc('${r.refdes}')" title="${isNc ? 'NC 해제' : 'NC로 지정'}">${isNc ? '🚫 NC해제' : 'NC지정'}</button>`
+      : '';
     return `
     <tr class="${r.status}${r.isDup ? ' dup-row' : ''}">
-      <td><span class="refdes">${r.refdes}</span>${r.isDup ? ' <span style="background:#f3e5f5;color:#7b1fa2;border-radius:8px;padding:1px 6px;font-size:0.68rem;font-weight:700;vertical-align:middle;">중복</span>' : ''}</td>
+      <td><span class="refdes">${r.refdes}</span>${r.isDup ? ' <span style="background:#f3e5f5;color:#7b1fa2;border-radius:8px;padding:1px 6px;font-size:0.68rem;font-weight:700;vertical-align:middle;">중복</span>' : ''}${ncBtn}</td>
       <td><span class="status-badge ${statusClass[r.status]}">${statusLabel[r.status]}</span></td>
       ${nameCell}
       ${specCell}
@@ -1437,9 +1661,67 @@ function renderTable(rows) {
   }).join('');
 }
 
+// ─── NC (No Connect) 관리 ────────────────────────────────
+// textarea → ncRefdes Set 동기화
+function syncNcFromTextarea() {
+  const raw = (document.getElementById('nc-refdes-input')?.value || '');
+  ncRefdes = new Set(
+    raw.split(/[\n,]+/)
+       .map(s => s.trim().toUpperCase())
+       .filter(s => s.length > 0)
+  );
+}
+
+// textarea 입력 시 실시간 반영
+function onNcInputChange() {
+  if (allRows.length === 0) return;
+  syncNcFromTextarea();
+  // allRows 내 coord-only ↔ nc 상태 갱신
+  allRows.forEach(r => {
+    if (r.status === 'coord-only' || r.status === 'nc') {
+      r.status = ncRefdes.has(r.refdes.toUpperCase().trim()) ? 'nc' : 'coord-only';
+    }
+  });
+  updateNcStats();
+  applyFilter();
+}
+
+// 테이블 행의 NC 토글 버튼
+function toggleNc(refdes) {
+  const key = refdes.toUpperCase().trim();
+  const row = allRows.find(r => r.refdes === refdes);
+  if (!row) return;
+
+  if (ncRefdes.has(key)) {
+    ncRefdes.delete(key);
+    row.status = 'coord-only';
+  } else {
+    ncRefdes.add(key);
+    row.status = 'nc';
+  }
+
+  // textarea 업데이트 (현재 NC 목록 반영)
+  const el = document.getElementById('nc-refdes-input');
+  if (el) {
+    const current = [...ncRefdes].sort().join('\n');
+    el.value = current;
+  }
+
+  updateNcStats();
+  applyFilter();
+}
+
+// NC 변경 후 요약 카드·상태 메시지 갱신
+function updateNcStats() {
+  const coordOnly = allRows.filter(r => r.status === 'coord-only').length;
+  const ncCount   = allRows.filter(r => r.status === 'nc').length;
+  document.getElementById('s-coord-only').textContent = coordOnly;
+  document.getElementById('s-nc').textContent         = ncCount;
+}
+
 // ─── Export to Excel ──────────────────────────────────────
 function exportExcel() {
-  const statusKo = { matched:'매칭', mismatch:'규격불일치', 'bom-only':'BOM만', 'coord-only':'좌표만' };
+  const statusKo = { matched:'매칭', mismatch:'규격불일치', 'bom-only':'BOM만', 'coord-only':'좌표만', nc:'NC' };
   const data = allRows.map(r => ({
     'RefDes': r.refdes,
     '상태': statusKo[r.status],
@@ -1472,6 +1754,7 @@ function exportExcel() {
   const matched   = allRows.filter(r=>r.status==='matched').length;
   const bomOnly   = allRows.filter(r=>r.status==='bom-only').length;
   const coordOnly = allRows.filter(r=>r.status==='coord-only').length;
+  const ncOnlyEx  = allRows.filter(r=>r.status==='nc').length;
   const totalBom  = matched + bomOnly;
   const mismatches = allRows.filter(r=>r.status==='mismatch').length;
   const summaryData = [
@@ -1481,6 +1764,7 @@ function exportExcel() {
     ['규격 불일치 (RefDes 매칭, 사이즈 다름)', mismatches],
     ['BOM만 있음 (좌표 없음)', bomOnly],
     ['좌표만 있음 (BOM 없음)', coordOnly],
+    ['NC 항목 (좌표만, NC 지정)', ncOnlyEx],
     ['RefDes 매칭률', totalBom ? ((matched+mismatches)/totalBom*100).toFixed(1)+'%' : '-'],
     ['규격 완전 일치율', totalBom ? (matched/totalBom*100).toFixed(1)+'%' : '-']
   ];
@@ -1584,7 +1868,7 @@ function exportWithOptions() {
   const bNameCol = document.getElementById('bom-name-col').value;
   const bSpecCol = document.getElementById('bom-spec-col').value;
   const RPAT = /^[A-Za-z]{1,6}\d/;
-  const statusKo = { matched:'매칭', mismatch:'규격불일치', 'bom-only':'BOM만', 'coord-only':'좌표만' };
+  const statusKo = { matched:'매칭', mismatch:'규격불일치', 'bom-only':'BOM만', 'coord-only':'좌표만', nc:'NC' };
 
   // RefDes → allRows 빠른 조회맵
   const rdMap = {};
@@ -1790,184 +2074,18 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
 </div>
 
 
-<!-- 공용 오버레이 -->
-<div class="side-panel-overlay" id="side-overlay" onclick="closePanel()"></div>
-
-<!-- 개발 히스토리 비밀번호 모달 -->
-<div id="pw-modal" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,0.45);align-items:center;justify-content:center;">
-  <div style="background:#fff;border-radius:16px;padding:32px 28px;width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.22);text-align:center;">
-    <div style="font-size:2rem;margin-bottom:8px;">🔒</div>
-    <h3 style="font-size:1.1rem;color:#1a237e;margin-bottom:6px;">개발 히스토리</h3>
-    <p style="font-size:0.82rem;color:#888;margin-bottom:20px;">비밀번호를 입력하세요</p>
-    <input id="pw-input" type="password" maxlength="20"
-      onkeydown="if(event.key==='Enter')submitHistoryPw();if(event.key==='Escape')cancelHistoryPw();"
-      style="width:100%;border:2px solid #c5cae9;border-radius:8px;padding:10px 14px;font-size:1rem;text-align:center;letter-spacing:4px;outline:none;transition:border-color 0.2s;"
-      onfocus="this.style.borderColor='#3949ab'" onblur="this.style.borderColor='#c5cae9'">
-    <div id="pw-error" style="display:none;color:#e53935;font-size:0.82rem;margin-top:8px;">❌ 비밀번호가 틀렸습니다</div>
-    <div style="display:flex;gap:10px;margin-top:18px;">
-      <button onclick="cancelHistoryPw()" style="flex:1;padding:9px;border:1px solid #ddd;border-radius:8px;background:#f5f5f5;color:#666;cursor:pointer;font-size:0.9rem;">취소</button>
-      <button onclick="submitHistoryPw()" style="flex:1;padding:9px;border:none;border-radius:8px;background:#1a237e;color:#fff;cursor:pointer;font-size:0.9rem;font-weight:600;">확인</button>
-    </div>
-  </div>
-</div>
-
-<!-- 사용법 패널 -->
-<div class="side-panel" id="panel-usage">
-  <div class="side-panel-hdr">
-    <span style="font-size:1.2rem;">📖</span>
-    <h2>사용법</h2>
-    <button class="side-panel-close" onclick="closePanel()">← 닫기</button>
-  </div>
-  <div class="side-panel-body">
-    <div class="sp-section">
-      <h3>📂 파일 업로드 순서</h3>
-      <ol>
-        <li>BOM 파일 (.xlsx) 업로드</li>
-        <li>좌표 데이터 파일 (.xlsx) 업로드</li>
-        <li>각 파일의 시트 선택</li>
-        <li>헤더 행 설정 확인 (보통 1행)</li>
-        <li>열 이름 설정 — Location, 품명, 규격, Maker, 수량</li>
-        <li>▶ 매칭 시작 클릭</li>
-      </ol>
-    </div>
-    <div class="sp-section">
-      <h3>🎨 결과 색상 의미</h3>
-      <ul style="list-style:none;padding:0;">
-        <li style="padding:4px 0;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#4caf50;margin-right:8px;"></span><strong>매칭</strong> — BOM·좌표 양쪽 존재, 규격 일치</li>
-        <li style="padding:4px 0;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#e040fb;margin-right:8px;"></span><strong>규격 불일치</strong> — 존재하지만 사이즈·피치 다름</li>
-        <li style="padding:4px 0;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef5350;margin-right:8px;"></span><strong>BOM만</strong> — BOM에 있으나 좌표 데이터 없음</li>
-        <li style="padding:4px 0;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff9800;margin-right:8px;"></span><strong>좌표만</strong> — 좌표 데이터에 있으나 BOM 없음</li>
-        <li style="padding:4px 0;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#9c27b0;margin-right:8px;"></span><strong>BOM 중복</strong> — 동일 RefDes가 여러 BOM 행에 등장</li>
-      </ul>
-    </div>
-    <div class="sp-section">
-      <h3>⚠️ 자동 제외 항목</h3>
-      <ul>
-        <li>FIDUCIAL — 파이듀셜 마크</li>
-        <li>HOLE — 마운팅 홀 (H1~Hn)</li>
-        <li>숫자 없는 토큰 — BOTTOM, BOX-CARTON 등</li>
-        <li>FOR 패턴 — FOR CP803S 형태 → 부속품으로 분류</li>
-        <li>대체품 — Location이 "대체품"인 행</li>
-        <li>품명 제외 키워드 — SILICONE-RTV, LABEL 등 (설정 가능)</li>
-      </ul>
-    </div>
-    <div class="sp-section">
-      <h3>📐 규격 비교 항목</h3>
-      <ul>
-        <li>칩 사이즈 — 1005, 1608, 2012, 3216 등</li>
-        <li>피치 — P5.0, P7.5 등 P값</li>
-        <li>다이오드 패키지 — SOD / SOT / SMA / SMB / SMC</li>
-        <li>수량 — BOM 단위수량 vs Location의 RefDes 개수</li>
-      </ul>
-    </div>
-    <div class="sp-section">
-      <h3>✏️ 수정 페이지</h3>
-      <ul>
-        <li>우측 하단 <strong>✏️ 수정 페이지</strong> 버튼으로 진입</li>
-        <li>BOM only 삭제, 중복 제거, 인라인 셀 수정 가능</li>
-        <li>엑셀 다운로드 시 원본 BOM 서식 유지 + 검증결과 컬럼 추가</li>
-      </ul>
-    </div>
-    <div class="sp-section" style="border-top:2px solid #e8eaf6;margin-top:8px;padding-top:16px;">
-      <h3>📊 BOM 버전 비교 사용법</h3>
-      <ol>
-        <li>상단 탭에서 <strong>📊 BOM 버전 비교</strong> 클릭</li>
-        <li><strong>구버전 BOM</strong>과 <strong>신버전 BOM</strong> 파일 각각 업로드</li>
-        <li>두 파일 업로드 완료 시 감지된 열 목록 자동 표시</li>
-        <li><strong>RefDes 열 이름</strong> 확인 (기본값: Location)</li>
-        <li>비교에서 제외할 열이 있으면 쉼표로 구분하여 입력<br>
-            <span style="color:#888;font-size:0.82rem;">예: 단계, Maker</span></li>
-        <li><strong>🔍 버전 비교 실행</strong> 클릭</li>
-      </ol>
-      <div style="margin-top:10px;">
-        <p style="font-size:0.85rem;color:#555;font-weight:600;">비교 결과 항목:</p>
-        <ul style="margin-top:4px;">
-          <li><span style="color:#2e7d32;font-weight:700;">➕ 추가</span> — 신버전에만 있는 RefDes</li>
-          <li><span style="color:#c62828;font-weight:700;">➖ 삭제</span> — 구버전에만 있는 RefDes</li>
-          <li><span style="color:#e65100;font-weight:700;">🔄 변경</span> — 같은 RefDes이지만 열 값이 달라진 항목</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- 개발 히스토리 패널 -->
-<div class="side-panel" id="panel-history">
-  <div class="side-panel-hdr">
-    <span style="font-size:1.2rem;">📋</span>
-    <h2>개발 히스토리</h2>
-    <button class="side-panel-close" onclick="closePanel()">← 닫기</button>
-  </div>
-  <div class="side-panel-body">
-    <div class="history-item">
-      <div class="history-date">2026.05.07</div>
-      <div class="history-content">
-        <span class="history-tag tag-feat">기능</span>📊 BOM 버전 비교 탭 추가 — 구버전 vs 신버전 전체 열 자동 비교<br>
-        <span class="history-tag tag-feat">기능</span>추가·삭제·변경 부품 분류 + 엑셀 4시트 다운로드<br>
-        <span class="history-tag tag-feat">기능</span>개발 히스토리 비밀번호 잠금 (🔒)<br>
-        <span class="history-tag tag-ui">UI</span>탭 이름 변경 — 좌표데이터·BOM 매칭 / BOM 버전 비교<br>
-        <span class="history-tag tag-ui">UI</span>사용법·히스토리 슬라이드 패널로 전환<br>
-        <span class="history-tag tag-fix">FIX</span>BOM 중복 UI — 중복 RefDes만 하이라이트, 규격 동일/상이 자동 판단
-      </div>
-    </div>
-    <div class="history-item">
-      <div class="history-date">2026.04.30</div>
-      <div class="history-content">
-        <span class="history-tag tag-fix">FIX</span>매칭 실행 후 테이블 미표시 버그 수정 (accessory-list null 오류)<br>
-        <span class="history-tag tag-feat">기능</span>엑셀 다운로드 — 원본 BOM 서식 유지 + 검증결과 컬럼 추가<br>
-        <span class="history-tag tag-ui">UI</span>수정 페이지 FAB 버튼 (우측 하단 고정)
-      </div>
-    </div>
-    <div class="history-item">
-      <div class="history-date">2026.04.30</div>
-      <div class="history-content">
-        <span class="history-tag tag-ui">UI</span>필터바 + 정보탭 1줄 통합, 부속품/품명제외 탭 제거<br>
-        <span class="history-tag tag-fix">FIX</span>중복 ID 제거 (qty-list, dup-list)<br>
-        <span class="history-tag tag-feat">기능</span>수정 페이지 슬라이드 패널 — 체크박스·내보내기 옵션 분리
-      </div>
-    </div>
-    <div class="history-item">
-      <div class="history-date">2026.04.16</div>
-      <div class="history-content">
-        <span class="history-tag tag-feat">기능</span>BOM 중복 패널 — 무시됨/사용됨 표시<br>
-        <span class="history-tag tag-feat">기능</span>대체품 패턴 (Location="대체품") 별도 분류<br>
-        <span class="history-tag tag-feat">기능</span>품명 제외 키워드 설정 (SILICONE-RTV, LABEL 등)<br>
-        <span class="history-tag tag-ui">UI</span>6개 패널 → 탭 패널로 통합
-      </div>
-    </div>
-    <div class="history-item">
-      <div class="history-date">2026.04.10</div>
-      <div class="history-content">
-        <span class="history-tag tag-feat">기능</span>FOR 패턴 감지 — FOR CP803S 형태 행 → 부속품으로 분류<br>
-        <span class="history-tag tag-fix">FIX</span>BRACKET 품명 제외 기본값에서 제거<br>
-        <span class="history-tag tag-feat">기능</span>수정 미리보기 모달 + 엑셀 다운로드 옵션 체크박스
-      </div>
-    </div>
-    <div class="history-item">
-      <div class="history-date">2026.04.01</div>
-      <div class="history-content">
-        <span class="history-tag tag-feat">기능</span>사용법 아코디언 패널<br>
-        <span class="history-tag tag-ui">UI</span>팬서 로고 (J 이니셜) + 클릭 확대 모달<br>
-        <span class="history-tag tag-feat">기능</span>수량 불일치 감지 — 단위수량 vs RefDes 개수 비교
-      </div>
-    </div>
-    <div class="history-item">
-      <div class="history-date">2026.03</div>
-      <div class="history-content">
-        <span class="history-tag tag-feat">기능</span>최초 개발 — BOM ↔ 좌표 매칭 기본 기능<br>
-        <span class="history-tag tag-feat">기능</span>규격 비교 (칩 사이즈, 피치, 다이오드 패키지)<br>
-        <span class="history-tag tag-ui">UI</span>요약 카드, 필터 버튼, 결과 테이블
-      </div>
-    </div>
-  </div>
-</div>
-
 
 </div><!-- /page-match -->
 
 <!-- ══════════════ 버전 비교 페이지 ══════════════ -->
 <div id="page-compare">
 <div class="container">
+
+  <!-- 버전비교 탭 상단 버튼 -->
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:16px;margin-top:4px;">
+    <button onclick="openPanel('usage')" style="background:white;border:1px solid #c5cae9;color:#3949ab;border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;font-weight:600;transition:all 0.15s;display:flex;align-items:center;gap:5px;box-shadow:0 1px 4px rgba(0,0,0,0.07);" onmouseover="this.style.background='#e8eaf6'" onmouseout="this.style.background='white'">📖 사용법</button>
+    <button onclick="openHistoryPanel()" style="background:white;border:1px solid #c5cae9;color:#3949ab;border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;font-weight:600;transition:all 0.15s;display:flex;align-items:center;gap:5px;box-shadow:0 1px 4px rgba(0,0,0,0.07);" onmouseover="this.style.background='#e8eaf6'" onmouseout="this.style.background='white'">🔒 개발 히스토리</button>
+  </div>
 
   <!-- 파일 업로드 -->
   <div class="cmp-upload-grid">
@@ -2087,6 +2205,274 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
 
 </div><!-- /container -->
 </div><!-- /page-compare -->
+
+<!-- 공용 오버레이 -->
+<div class="side-panel-overlay" id="side-overlay" onclick="closePanel()"></div>
+
+<!-- 개발 히스토리 비밀번호 모달 -->
+<div id="pw-modal" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,0.45);align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:32px 28px;width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.22);text-align:center;">
+    <div style="font-size:2rem;margin-bottom:8px;">🔒</div>
+    <h3 style="font-size:1.1rem;color:#1a237e;margin-bottom:6px;">개발 히스토리</h3>
+    <p style="font-size:0.82rem;color:#888;margin-bottom:20px;">비밀번호를 입력하세요</p>
+    <input id="pw-input" type="password" maxlength="20"
+      onkeydown="if(event.key==='Enter')submitHistoryPw();if(event.key==='Escape')cancelHistoryPw();"
+      style="width:100%;border:2px solid #c5cae9;border-radius:8px;padding:10px 14px;font-size:1rem;text-align:center;letter-spacing:4px;outline:none;transition:border-color 0.2s;"
+      onfocus="this.style.borderColor='#3949ab'" onblur="this.style.borderColor='#c5cae9'">
+    <div id="pw-error" style="display:none;color:#e53935;font-size:0.82rem;margin-top:8px;">❌ 비밀번호가 틀렸습니다</div>
+    <div style="display:flex;gap:10px;margin-top:18px;">
+      <button onclick="cancelHistoryPw()" style="flex:1;padding:9px;border:1px solid #ddd;border-radius:8px;background:#f5f5f5;color:#666;cursor:pointer;font-size:0.9rem;">취소</button>
+      <button onclick="submitHistoryPw()" style="flex:1;padding:9px;border:none;border-radius:8px;background:#1a237e;color:#fff;cursor:pointer;font-size:0.9rem;font-weight:600;">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- 피드백 토스트 -->
+<div id="fb-toast"></div>
+
+<!-- 💡 피드백 모달 -->
+<div id="feedback-modal">
+  <div class="fb-box">
+    <div class="fb-header">
+      <span style="font-size:1.2rem;">💡</span>
+      <h3>개선 제안 / 기능 요청</h3>
+      <button class="fb-close" onclick="closeFeedback()">✕</button>
+    </div>
+    <div class="fb-body">
+      <div class="fb-row">
+        <label>이름 <span style="color:#c62828;font-size:0.75rem;">*</span></label>
+        <input type="text" id="fb-name" placeholder="예: 홍길동">
+      </div>
+      <div class="fb-row">
+        <label>유형</label>
+        <select id="fb-type">
+          <option value="기능요청">🚀 기능 요청</option>
+          <option value="버그신고">🐛 버그 신고</option>
+          <option value="UI개선">🎨 UI 개선</option>
+          <option value="기타">💬 기타</option>
+        </select>
+      </div>
+      <div class="fb-row">
+        <label>제목 <span style="color:#aaa;font-weight:400;">(선택)</span></label>
+        <input type="text" id="fb-title" placeholder="예: 특정 필터 추가 요청">
+      </div>
+      <div class="fb-row">
+        <label>내용 <span style="color:#c62828;font-size:0.75rem;">*</span></label>
+        <textarea id="fb-content" placeholder="어떤 점이 불편했거나, 어떤 기능이 있으면 좋을지 자유롭게 적어주세요 😊"></textarea>
+      </div>
+      <p class="fb-note">📨 전송하면 구글 스프레드시트에 자동 저장됩니다.</p>
+    </div>
+    <div class="fb-footer">
+      <button class="fb-cancel-btn" onclick="closeFeedback()">취소</button>
+      <button class="fb-send-btn" onclick="sendFeedback()">📨 제출하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 사용법 패널 -->
+<div class="side-panel" id="panel-usage">
+  <div class="side-panel-hdr">
+    <span style="font-size:1.2rem;">📖</span>
+    <h2>사용법</h2>
+    <button class="side-panel-close" onclick="closePanel()">← 닫기</button>
+  </div>
+  <div class="side-panel-body">
+    <div class="sp-section">
+      <h3>📂 파일 업로드 순서</h3>
+      <ol>
+        <li>BOM 파일 (.xlsx) 업로드</li>
+        <li>좌표 데이터 파일 (.xlsx) 업로드</li>
+        <li>각 파일의 시트 선택</li>
+        <li>헤더 행 설정 확인 (보통 1행)</li>
+        <li>열 이름 설정 — Location, 품명, 규격, Maker, 수량</li>
+        <li>▶ 매칭 시작 클릭</li>
+      </ol>
+    </div>
+    <div class="sp-section">
+      <h3>🎨 결과 색상 의미</h3>
+      <ul style="list-style:none;padding:0;">
+        <li style="padding:4px 0;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#4caf50;margin-right:8px;"></span><strong>매칭</strong> — BOM·좌표 양쪽 존재, 규격 일치</li>
+        <li style="padding:4px 0;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#e040fb;margin-right:8px;"></span><strong>규격 불일치</strong> — 존재하지만 사이즈·피치 다름</li>
+        <li style="padding:4px 0;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef5350;margin-right:8px;"></span><strong>BOM만</strong> — BOM에 있으나 좌표 데이터 없음</li>
+        <li style="padding:4px 0;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff9800;margin-right:8px;"></span><strong>좌표만</strong> — 좌표 데이터에 있으나 BOM 없음</li>
+        <li style="padding:4px 0;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#78909c;margin-right:8px;"></span><strong>NC</strong> — 좌표에만 있는 항목 중 NC(No Connect)로 지정한 것</li>
+        <li style="padding:4px 0;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#9c27b0;margin-right:8px;"></span><strong>BOM 중복</strong> — 동일 RefDes가 여러 BOM 행에 등장</li>
+      </ul>
+    </div>
+    <div class="sp-section">
+      <h3>📊 매칭률 계산 방식</h3>
+      <div style="background:#f5f7ff;border-radius:8px;padding:12px 14px;font-size:0.83rem;color:#333;line-height:1.8;">
+        <div style="font-family:monospace;color:#1a237e;font-size:0.88rem;margin-bottom:6px;">
+          매칭률 = (매칭 성공 + 규격불일치) ÷ 전체 BOM × 100
+        </div>
+        <div style="color:#555;font-size:0.8rem;">
+          ㆍ <strong>전체 BOM</strong> = 매칭 성공 + 규격불일치 + BOM만<br>
+          ㆍ <strong>좌표만 / NC</strong>는 분모에 미포함 (BOM 기준 지표)<br>
+          ㆍ 규격 불일치도 RefDes는 찾았으므로 매칭으로 계산<br>
+          ㆍ 100% = BOM에 있는 모든 부품이 좌표에 실장됨
+        </div>
+      </div>
+    </div>
+    <div class="sp-section">
+      <h3>⚠️ 자동 제외 항목</h3>
+      <ul>
+        <li>FIDUCIAL — 파이듀셜 마크</li>
+        <li>HOLE — 마운팅 홀 (H1~Hn)</li>
+        <li>숫자 없는 토큰 — BOTTOM, BOX-CARTON 등</li>
+        <li>FOR 패턴 — FOR CP803S 형태 → 부속품으로 분류</li>
+        <li>대체품 — Location이 "대체품"인 행</li>
+        <li>품명 제외 키워드 — SILICONE-RTV, LABEL 등 (설정 가능)</li>
+      </ul>
+    </div>
+    <div class="sp-section">
+      <h3>📐 규격 비교 항목</h3>
+      <ul>
+        <li>칩 사이즈 — 1005, 1608, 2012, 3216 등</li>
+        <li>피치 — P5.0, P7.5 등 P값</li>
+        <li>다이오드 패키지 — SOD / SOT / SMA / SMB / SMC</li>
+        <li>수량 — BOM 단위수량 vs Location의 RefDes 개수</li>
+      </ul>
+    </div>
+    <div class="sp-section">
+      <h3>✏️ 수정 페이지</h3>
+      <ul>
+        <li>우측 하단 <strong>✏️ 수정 페이지</strong> 버튼으로 진입</li>
+        <li>BOM only 삭제, 중복 제거, 인라인 셀 수정 가능</li>
+        <li>엑셀 다운로드 시 원본 BOM 서식 유지 + 검증결과 컬럼 추가</li>
+      </ul>
+    </div>
+    <div class="sp-section" style="border-top:2px solid #e8eaf6;margin-top:8px;padding-top:16px;">
+      <h3>📊 BOM 버전 비교 사용법</h3>
+      <ol>
+        <li>상단 탭에서 <strong>📊 BOM 버전 비교</strong> 클릭</li>
+        <li><strong>구버전 BOM</strong>과 <strong>신버전 BOM</strong> 파일 각각 업로드</li>
+        <li>두 파일 업로드 완료 시 감지된 열 목록 자동 표시</li>
+        <li><strong>RefDes 열 이름</strong> 확인 (기본값: Location)</li>
+        <li>비교에서 제외할 열이 있으면 쉼표로 구분하여 입력<br>
+            <span style="color:#888;font-size:0.82rem;">예: 단계, Maker</span></li>
+        <li><strong>🔍 버전 비교 실행</strong> 클릭</li>
+      </ol>
+      <div style="margin-top:10px;">
+        <p style="font-size:0.85rem;color:#555;font-weight:600;">비교 결과 항목:</p>
+        <ul style="margin-top:4px;">
+          <li><span style="color:#2e7d32;font-weight:700;">➕ 추가</span> — 신버전에만 있는 RefDes</li>
+          <li><span style="color:#c62828;font-weight:700;">➖ 삭제</span> — 구버전에만 있는 RefDes</li>
+          <li><span style="color:#e65100;font-weight:700;">🔄 변경</span> — 같은 RefDes이지만 열 값이 달라진 항목</li>
+        </ul>
+      </div>
+    </div>
+    <div class="sp-section" style="border-top:2px solid #e8eaf6;margin-top:8px;padding-top:16px;">
+      <h3>💡 개선 제안 / 기능 요청</h3>
+      <p style="font-size:0.84rem;color:#555;margin-bottom:10px;">사용하다가 불편한 점이나 필요한 기능이 있으면 언제든지 알려주세요!</p>
+      <div style="background:#f5f7ff;border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:14px;">
+        <div style="font-size:2rem;line-height:1;">💡</div>
+        <div style="flex:1;">
+          <div style="font-size:0.85rem;font-weight:700;color:#1a237e;margin-bottom:4px;">개선 제안 버튼 위치</div>
+          <div style="font-size:0.82rem;color:#555;line-height:1.6;">
+            상단 탭 우측의 <strong>💡 개선 제안</strong> 버튼 클릭<br>
+            → 유형·이름·내용 입력 후 제출하면 담당자에게 자동 전달됩니다
+          </div>
+        </div>
+        <button onclick="closePanel();openFeedback();" style="background:linear-gradient(135deg,#1a237e,#3949ab);color:white;border:none;border-radius:10px;padding:9px 16px;font-size:0.82rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">💡 바로 열기</button>
+      </div>
+    </div>
+    <div class="sp-section" style="border-top:2px solid #e8eaf6;margin-top:8px;padding-top:16px;">
+      <h3>🚫 NC 항목 지정 사용법</h3>
+      <ol>
+        <li>매칭 실행 후 <strong>⚠️ 좌표만</strong> 필터를 클릭해 BOM에 없는 항목 확인</li>
+        <li>NC로 지정할 RefDes의 행에서 <strong>[NC지정]</strong> 버튼 클릭<br>
+            <span style="color:#888;font-size:0.82rem;">또는 설정 섹션의 NC 입력란에 직접 RefDes 입력 (쉼표·줄바꿈 구분)</span></li>
+        <li>해당 항목이 <span style="background:#eceff1;color:#37474f;padding:1px 6px;border-radius:8px;font-size:0.8rem;font-weight:700;">🚫 NC</span> 상태로 변경되고 좌표만 카운트에서 분리됨</li>
+        <li><strong>🚫 NC</strong> 필터 버튼으로 NC 항목만 모아 확인 가능</li>
+        <li>NC 해제: <strong>[🚫 NC해제]</strong> 버튼 클릭</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<!-- 개발 히스토리 패널 -->
+<div class="side-panel" id="panel-history">
+  <div class="side-panel-hdr">
+    <span style="font-size:1.2rem;">📋</span>
+    <h2>개발 히스토리</h2>
+    <button class="side-panel-close" onclick="closePanel()">← 닫기</button>
+  </div>
+  <div class="side-panel-body">
+    <div class="history-item">
+      <div class="history-date">2026.05.14</div>
+      <div class="history-content">
+        <span class="history-tag tag-feat">기능</span>🚫 NC (No Connect) 항목 지정 — 텍스트 입력 + 테이블 버튼 토글<br>
+        <span class="history-tag tag-feat">기능</span>NC 항목 별도 상태 표시 + 🚫 NC 필터 버튼<br>
+        <span class="history-tag tag-feat">기능</span>NC 요약 카드 — 좌표만 카운트에서 NC 분리<br>
+        <span class="history-tag tag-fix">FIX</span>엑셀 내보내기 요약시트에 NC 건수 추가<br>
+        <span class="history-tag tag-fix">FIX</span>sort 순서 정리 (matched/mismatch → bom-only → coord-only → nc)
+      </div>
+    </div>
+    <div class="history-item">
+      <div class="history-date">2026.05.07</div>
+      <div class="history-content">
+        <span class="history-tag tag-feat">기능</span>📊 BOM 버전 비교 탭 추가 — 구버전 vs 신버전 전체 열 자동 비교<br>
+        <span class="history-tag tag-feat">기능</span>추가·삭제·변경 부품 분류 + 엑셀 4시트 다운로드<br>
+        <span class="history-tag tag-feat">기능</span>개발 히스토리 비밀번호 잠금 (🔒)<br>
+        <span class="history-tag tag-ui">UI</span>탭 이름 변경 — 좌표데이터·BOM 매칭 / BOM 버전 비교<br>
+        <span class="history-tag tag-ui">UI</span>사용법·히스토리 슬라이드 패널로 전환<br>
+        <span class="history-tag tag-fix">FIX</span>BOM 중복 UI — 중복 RefDes만 하이라이트, 규격 동일/상이 자동 판단
+      </div>
+    </div>
+    <div class="history-item">
+      <div class="history-date">2026.04.30</div>
+      <div class="history-content">
+        <span class="history-tag tag-fix">FIX</span>매칭 실행 후 테이블 미표시 버그 수정 (accessory-list null 오류)<br>
+        <span class="history-tag tag-feat">기능</span>엑셀 다운로드 — 원본 BOM 서식 유지 + 검증결과 컬럼 추가<br>
+        <span class="history-tag tag-ui">UI</span>수정 페이지 FAB 버튼 (우측 하단 고정)
+      </div>
+    </div>
+    <div class="history-item">
+      <div class="history-date">2026.04.30</div>
+      <div class="history-content">
+        <span class="history-tag tag-ui">UI</span>필터바 + 정보탭 1줄 통합, 부속품/품명제외 탭 제거<br>
+        <span class="history-tag tag-fix">FIX</span>중복 ID 제거 (qty-list, dup-list)<br>
+        <span class="history-tag tag-feat">기능</span>수정 페이지 슬라이드 패널 — 체크박스·내보내기 옵션 분리
+      </div>
+    </div>
+    <div class="history-item">
+      <div class="history-date">2026.04.16</div>
+      <div class="history-content">
+        <span class="history-tag tag-feat">기능</span>BOM 중복 패널 — 무시됨/사용됨 표시<br>
+        <span class="history-tag tag-feat">기능</span>대체품 패턴 (Location="대체품") 별도 분류<br>
+        <span class="history-tag tag-feat">기능</span>품명 제외 키워드 설정 (SILICONE-RTV, LABEL 등)<br>
+        <span class="history-tag tag-ui">UI</span>6개 패널 → 탭 패널로 통합
+      </div>
+    </div>
+    <div class="history-item">
+      <div class="history-date">2026.04.10</div>
+      <div class="history-content">
+        <span class="history-tag tag-feat">기능</span>FOR 패턴 감지 — FOR CP803S 형태 행 → 부속품으로 분류<br>
+        <span class="history-tag tag-fix">FIX</span>BRACKET 품명 제외 기본값에서 제거<br>
+        <span class="history-tag tag-feat">기능</span>수정 미리보기 모달 + 엑셀 다운로드 옵션 체크박스
+      </div>
+    </div>
+    <div class="history-item">
+      <div class="history-date">2026.04.01</div>
+      <div class="history-content">
+        <span class="history-tag tag-feat">기능</span>사용법 아코디언 패널<br>
+        <span class="history-tag tag-ui">UI</span>팬서 로고 (J 이니셜) + 클릭 확대 모달<br>
+        <span class="history-tag tag-feat">기능</span>수량 불일치 감지 — 단위수량 vs RefDes 개수 비교
+      </div>
+    </div>
+    <div class="history-item">
+      <div class="history-date">2026.03</div>
+      <div class="history-content">
+        <span class="history-tag tag-feat">기능</span>최초 개발 — BOM ↔ 좌표 매칭 기본 기능<br>
+        <span class="history-tag tag-feat">기능</span>규격 비교 (칩 사이즈, 피치, 다이오드 패키지)<br>
+        <span class="history-tag tag-ui">UI</span>요약 카드, 필터 버튼, 결과 테이블
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
 
 <script>
 
