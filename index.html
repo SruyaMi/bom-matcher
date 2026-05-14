@@ -213,6 +213,50 @@
   /* Tooltip */
   [title] { cursor: help; }
 
+  /* ── 도넛 차트 섹션 ── */
+  #chart-section {
+    background: white; border-radius: 12px; padding: 20px 28px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.08); margin-bottom: 24px;
+    display: none;
+  }
+  #chart-section.visible { display: flex; align-items: center; gap: 36px; flex-wrap: wrap; }
+  #donut-wrap { position: relative; flex-shrink: 0; }
+  #donut-svg { display: block; }
+  #donut-legend {
+    display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 180px;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 0.83rem; color: #444;
+  }
+  .legend-dot {
+    width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0;
+  }
+  .legend-label { flex: 1; }
+  .legend-count { font-weight: 700; color: #222; min-width: 28px; text-align: right; }
+  .legend-pct { font-size: 0.75rem; color: #999; min-width: 36px; text-align: right; }
+
+  /* ── 내보내기 버튼 ── */
+  .btn-export-filter {
+    background: #1565c0; color: white; border: none; border-radius: 8px;
+    padding: 6px 14px; font-size: 0.8rem; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; gap: 5px; white-space: nowrap;
+  }
+  .btn-export-filter:hover { background: #0d47a1; }
+
+  /* ── 행 체크박스 ── */
+  .row-chk { width: 16px; height: 16px; cursor: pointer; accent-color: #3949ab; }
+  th.chk-col, td.chk-col {
+    width: 36px; text-align: center; padding: 8px 6px !important;
+  }
+  tr.row-selected { background: #e8eaf6 !important; }
+  tr.row-selected td:first-child { border-left: 3px solid #3949ab !important; }
+  .sel-count-badge {
+    background: #3949ab; color: white; border-radius: 10px;
+    padding: 1px 7px; font-size: 0.72rem; font-weight: 700;
+  }
+
   @media (max-width: 900px) {
     .upload-section { grid-template-columns: 1fr; }
     .summary-cards { grid-template-columns: repeat(3, 1fr); }
@@ -775,6 +819,14 @@
     </div>
   </div>
 
+  <!-- 도넛 차트 -->
+  <div id="chart-section">
+    <div id="donut-wrap">
+      <svg id="donut-svg" width="170" height="170" viewBox="0 0 170 170"></svg>
+    </div>
+    <div id="donut-legend"></div>
+  </div>
+
   <!-- Filter Bar -->
   <div class="filter-bar" id="filter-bar" style="display:none">
     <button class="filter-btn active" data-filter="all" onclick="setFilter('all',this)">전체</button>
@@ -786,7 +838,9 @@
     <button class="filter-btn f-dup" data-filter="dup" id="dup-filter-btn" onclick="setFilter('dup',this)">⚠ BOM중복</button>
     <div class="filter-divider"></div>
     <div id="info-btn-group" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"></div>
-<input class="search-box" type="text" id="search-input" placeholder="🔍 RefDes 검색..." oninput="applyFilter()">
+    <input class="search-box" type="text" id="search-input" placeholder="🔍 RefDes 검색..." oninput="applyFilter()">
+    <button class="btn-export-filter" onclick="exportExcel()" title="전체 항목 엑셀로 내보내기" style="background:#388e3c;">📥 전체 저장</button>
+    <button class="btn-export-filter" id="export-sel-btn" onclick="exportSelected()" title="체크한 항목만 엑셀로 내보내기">📤 선택 저장 <span id="sel-count-badge" class="sel-count-badge" style="display:none">0</span></button>
   </div>
 
   <!-- 정보 패널들 (필터바 버튼으로 토글) -->
@@ -832,6 +886,7 @@
       <table id="result-table">
         <thead>
           <tr>
+            <th class="chk-col"><input type="checkbox" class="row-chk" id="chk-all" onclick="toggleSelectAll(this)" title="전체 선택/해제"></th>
             <th>RefDes</th>
             <th>상태</th>
             <th>품명 (BOM)</th>
@@ -848,7 +903,7 @@
         </thead>
         <tbody id="result-body">
           <tr>
-            <td colspan="12">
+            <td colspan="13">
               <div class="empty-state">
                 <div class="icon">📂</div>
                 <p>BOM 파일과 좌표 데이터 파일을 업로드한 후 매칭을 실행하세요</p>
@@ -887,7 +942,8 @@ let accessoryItems = [];
 let daecheItems = [];
 let nameExclItems = [];
 let inlineEditMode = false;
-let ncRefdes = new Set(); // NC (No Connect) RefDes 집합
+let ncRefdes = new Set();      // NC (No Connect) RefDes 집합
+let selectedRefdes = new Set(); // 선택된 RefDes 집합
 
 // ─── Size / Pitch Extraction ──────────────────────────────
 // 칩 사이즈: 1608, 3216, 2012 등 (4자리 숫자)
@@ -1305,6 +1361,9 @@ function runMatch() {
   document.getElementById('s-nc').textContent       = ncCount;
   document.getElementById('s-coverage').textContent = pct + '%';
 
+  // 도넛 차트 업데이트
+  drawDonutChart(matched, mismatch, bomOnly, coordOnly, ncCount);
+
   document.getElementById('summary').style.display    = 'grid';
   document.getElementById('filter-bar').style.display = 'flex';
   document.getElementById('export-btn').disabled      = false;
@@ -1628,10 +1687,20 @@ function renderTable(rows) {
 
   const ec = inlineEditMode ? 'true' : 'false';
   const eC = inlineEditMode ? ' editable-cell' : '';
+  // 헤더 전체선택 체크박스 상태 갱신
+  const chkAll = document.getElementById('chk-all');
+  if (chkAll) {
+    const allChecked = rows.length > 0 && rows.every(r => selectedRefdes.has(r.refdes));
+    const someChecked = rows.some(r => selectedRefdes.has(r.refdes));
+    chkAll.checked = allChecked;
+    chkAll.indeterminate = !allChecked && someChecked;
+  }
+
   tbody.innerHTML = rows.map(r => {
     const isMismatch = r.status === 'mismatch';
     const isCoordOnly = r.status === 'coord-only';
     const isNc = r.status === 'nc';
+    const isSelected = selectedRefdes.has(r.refdes);
     const specCell  = isMismatch
       ? `<td class="size-mismatch${eC}" data-refdes="${r.refdes}" data-field="bomSpec" contenteditable="${ec}" title="BOM: ${r.bomSize}  |  Coord: ${r.coordSize}" onblur="saveEdit(this)">${r.bomSpec} <span style="color:#e040fb">→${r.bomSize}</span></td>`
       : `<td class="${eC.trim()}" data-refdes="${r.refdes}" data-field="bomSpec" contenteditable="${ec}" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.bomSpec}" onblur="saveEdit(this)">${r.bomSpec || ''}</td>`;
@@ -1644,7 +1713,8 @@ function renderTable(rows) {
       ? `<button class="nc-toggle-btn${isNc ? ' is-nc' : ''}" onclick="toggleNc('${r.refdes}')" title="${isNc ? 'NC 해제' : 'NC로 지정'}">${isNc ? '🚫 NC해제' : 'NC지정'}</button>`
       : '';
     return `
-    <tr class="${r.status}${r.isDup ? ' dup-row' : ''}">
+    <tr class="${r.status}${r.isDup ? ' dup-row' : ''}${isSelected ? ' row-selected' : ''}">
+      <td class="chk-col"><input type="checkbox" class="row-chk" ${isSelected ? 'checked' : ''} onchange="toggleRowSelect('${r.refdes}',this)"></td>
       <td><span class="refdes">${r.refdes}</span>${r.isDup ? ' <span style="background:#f3e5f5;color:#7b1fa2;border-radius:8px;padding:1px 6px;font-size:0.68rem;font-weight:700;vertical-align:middle;">중복</span>' : ''}${ncBtn}</td>
       <td><span class="status-badge ${statusClass[r.status]}">${statusLabel[r.status]}</span></td>
       ${nameCell}
@@ -1659,6 +1729,196 @@ function renderTable(rows) {
       <td>${r.partType || '<span class="na">-</span>'}</td>
     </tr>`;
   }).join('');
+}
+
+// ─── 행 체크박스 선택 ────────────────────────────────────
+function toggleRowSelect(refdes, chk) {
+  if (chk.checked) selectedRefdes.add(refdes);
+  else selectedRefdes.delete(refdes);
+  updateSelBadge();
+  // tr 하이라이트
+  const tr = chk.closest('tr');
+  if (tr) tr.classList.toggle('row-selected', chk.checked);
+  // 헤더 체크박스 indeterminate 갱신
+  const visibleRefdes = [...document.querySelectorAll('#result-body .row-chk')].map(c => {
+    return c.closest('tr') ? c : null;
+  }).filter(Boolean);
+  const chkAll = document.getElementById('chk-all');
+  if (chkAll) {
+    const all = [...document.querySelectorAll('#result-body .row-chk')];
+    const checked = all.filter(c => c.checked).length;
+    chkAll.checked = checked === all.length && all.length > 0;
+    chkAll.indeterminate = checked > 0 && checked < all.length;
+  }
+}
+
+function toggleSelectAll(masterChk) {
+  const all = document.querySelectorAll('#result-body .row-chk');
+  all.forEach(chk => {
+    chk.checked = masterChk.checked;
+    const refdes = chk.closest('tr') ?
+      chk.closest('tr').querySelector('.refdes')?.textContent : null;
+    if (refdes) {
+      if (masterChk.checked) selectedRefdes.add(refdes);
+      else selectedRefdes.delete(refdes);
+    }
+    const tr = chk.closest('tr');
+    if (tr) tr.classList.toggle('row-selected', masterChk.checked);
+  });
+  updateSelBadge();
+}
+
+function updateSelBadge() {
+  const badge = document.getElementById('sel-count-badge');
+  if (!badge) return;
+  const cnt = selectedRefdes.size;
+  badge.textContent = cnt;
+  badge.style.display = cnt > 0 ? 'inline' : 'none';
+}
+
+// ─── 선택 항목 내보내기 ──────────────────────────────────
+function exportSelected() {
+  if (selectedRefdes.size === 0) {
+    alert('저장할 항목을 먼저 체크해주세요 ☑️');
+    return;
+  }
+  const rows = allRows.filter(r => selectedRefdes.has(r.refdes));
+  const statusKo = { matched:'매칭', mismatch:'규격불일치', 'bom-only':'BOM만', 'coord-only':'좌표만', nc:'NC' };
+  const data = rows.map(r => ({
+    'RefDes': r.refdes,
+    '상태': statusKo[r.status] || r.status,
+    '품명(BOM)': r.bomName,
+    '규격(BOM)': r.bomSpec,
+    'BOM 추출 사이즈': r.bomSize || '',
+    'Coord 추출 사이즈': r.coordSize || '',
+    'Maker': r.bomMaker,
+    'PCB Decal': r.decal,
+    'Layer': r.layer,
+    'Position X': r.posX,
+    'Position Y': r.posY,
+    'Orient': r.orient,
+    'SMD': r.smd,
+    'Part Type': r.partType
+  }));
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [
+    {wch:12},{wch:10},{wch:20},{wch:35},{wch:14},{wch:14},
+    {wch:15},{wch:22},{wch:8},{wch:10},{wch:10},{wch:8},{wch:6},{wch:20}
+  ];
+  XLSX.utils.book_append_sheet(wb, ws, '선택항목');
+  const now = new Date();
+  const ts = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, `BOM_선택_${ts}.xlsx`);
+}
+
+// ─── 도넛 차트 ───────────────────────────────────────────
+function drawDonutChart(matched, mismatch, bomOnly, coordOnly, ncCount) {
+  const cx = 85, cy = 85, R = 68, r = 44;
+  const segments = [
+    { label: '매칭',      count: matched,   color: '#4caf50' },
+    { label: '규격불일치', count: mismatch,  color: '#e040fb' },
+    { label: 'BOM만',     count: bomOnly,   color: '#ef5350' },
+    { label: '좌표만',    count: coordOnly, color: '#ff9800' },
+    { label: 'NC',        count: ncCount,   color: '#78909c' },
+  ].filter(s => s.count > 0);
+
+  const total = segments.reduce((s, x) => s + x.count, 0);
+  if (total === 0) return;
+
+  let angle = -Math.PI / 2;
+  let paths = '';
+  const GAP = 0.018; // 세그먼트 간 간격
+
+  segments.forEach(seg => {
+    const sweep = (seg.count / total) * 2 * Math.PI - GAP;
+    const a1 = angle + GAP / 2, a2 = angle + sweep + GAP / 2;
+    const large = sweep > Math.PI ? 1 : 0;
+    const x1 = cx + R * Math.cos(a1), y1 = cy + R * Math.sin(a1);
+    const x2 = cx + R * Math.cos(a2), y2 = cy + R * Math.sin(a2);
+    const x3 = cx + r * Math.cos(a2), y3 = cy + r * Math.sin(a2);
+    const x4 = cx + r * Math.cos(a1), y4 = cy + r * Math.sin(a1);
+    paths += `<path d="M${x1.toFixed(2)},${y1.toFixed(2)} A${R},${R} 0 ${large},1 ${x2.toFixed(2)},${y2.toFixed(2)} L${x3.toFixed(2)},${y3.toFixed(2)} A${r},${r} 0 ${large},0 ${x4.toFixed(2)},${y4.toFixed(2)} Z" fill="${seg.color}"/>`;
+    angle += sweep + GAP;
+  });
+
+  // 중앙 텍스트
+  const pct = Math.round((matched + mismatch) / (matched + mismatch + bomOnly) * 100) || 0;
+  paths += `<text x="${cx}" y="${cy - 9}" text-anchor="middle" font-size="24" font-weight="800" fill="#1a237e">${pct}%</text>`;
+  paths += `<text x="${cx}" y="${cy + 10}" text-anchor="middle" font-size="10" fill="#888">매칭률</text>`;
+  paths += `<text x="${cx}" y="${cy + 24}" text-anchor="middle" font-size="10" fill="#aaa">BOM ${matched+mismatch+bomOnly}개</text>`;
+
+  document.getElementById('donut-svg').innerHTML = paths;
+
+  // 범례
+  const all = [
+    { label: '매칭',      count: matched,   color: '#4caf50' },
+    { label: '규격불일치', count: mismatch,  color: '#e040fb' },
+    { label: 'BOM만',     count: bomOnly,   color: '#ef5350' },
+    { label: '좌표만',    count: coordOnly, color: '#ff9800' },
+    { label: 'NC',        count: ncCount,   color: '#78909c' },
+  ];
+  const grandTotal = all.reduce((s,x) => s+x.count, 0);
+  document.getElementById('donut-legend').innerHTML = all.map(s => `
+    <div class="legend-item">
+      <span class="legend-dot" style="background:${s.color}"></span>
+      <span class="legend-label">${s.label}</span>
+      <span class="legend-count">${s.count}</span>
+      <span class="legend-pct">${grandTotal ? (s.count/grandTotal*100).toFixed(1) : 0}%</span>
+    </div>`).join('');
+
+  document.getElementById('chart-section').classList.add('visible');
+}
+
+// ─── 필터 기준 내보내기 ──────────────────────────────────
+function exportFiltered() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  let rows = allRows;
+  if (currentFilter === 'dup')         rows = rows.filter(r => r.isDup);
+  else if (currentFilter === 'coord-only') rows = rows.filter(r => r.status === 'coord-only');
+  else if (currentFilter !== 'all')    rows = rows.filter(r => r.status === currentFilter);
+  if (q) rows = rows.filter(r =>
+    r.refdes.toLowerCase().includes(q) ||
+    r.bomName.toLowerCase().includes(q) ||
+    r.decal.toLowerCase().includes(q)
+  );
+
+  if (rows.length === 0) { alert('내보낼 항목이 없습니다.'); return; }
+
+  const statusKo = { matched:'매칭', mismatch:'규격불일치', 'bom-only':'BOM만', 'coord-only':'좌표만', nc:'NC' };
+  const filterName = {
+    all:'전체', matched:'매칭', mismatch:'규격불일치',
+    'bom-only':'BOM만', 'coord-only':'좌표만', nc:'NC', dup:'BOM중복'
+  }[currentFilter] || currentFilter;
+
+  const data = rows.map(r => ({
+    'RefDes': r.refdes,
+    '상태': statusKo[r.status] || r.status,
+    '품명(BOM)': r.bomName,
+    '규격(BOM)': r.bomSpec,
+    'BOM 추출 사이즈': r.bomSize || '',
+    'Coord 추출 사이즈': r.coordSize || '',
+    'Maker': r.bomMaker,
+    'PCB Decal': r.decal,
+    'Layer': r.layer,
+    'Position X': r.posX,
+    'Position Y': r.posY,
+    'Orient': r.orient,
+    'SMD': r.smd,
+    'Part Type': r.partType
+  }));
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [
+    {wch:12},{wch:10},{wch:20},{wch:35},{wch:14},{wch:14},
+    {wch:15},{wch:22},{wch:8},{wch:10},{wch:10},{wch:8},{wch:6},{wch:20}
+  ];
+  XLSX.utils.book_append_sheet(wb, ws, filterName);
+
+  const now = new Date();
+  const ts = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, `BOM_${filterName}_${ts}.xlsx`);
 }
 
 // ─── NC (No Connect) 관리 ────────────────────────────────
@@ -1711,12 +1971,16 @@ function toggleNc(refdes) {
   applyFilter();
 }
 
-// NC 변경 후 요약 카드·상태 메시지 갱신
+// NC 변경 후 요약 카드·차트·상태 메시지 갱신
 function updateNcStats() {
+  const matched   = allRows.filter(r => r.status === 'matched').length;
+  const mismatch  = allRows.filter(r => r.status === 'mismatch').length;
+  const bomOnly   = allRows.filter(r => r.status === 'bom-only').length;
   const coordOnly = allRows.filter(r => r.status === 'coord-only').length;
   const ncCount   = allRows.filter(r => r.status === 'nc').length;
   document.getElementById('s-coord-only').textContent = coordOnly;
   document.getElementById('s-nc').textContent         = ncCount;
+  drawDonutChart(matched, mismatch, bomOnly, coordOnly, ncCount);
 }
 
 // ─── Export to Excel ──────────────────────────────────────
@@ -1973,6 +2237,8 @@ function exportWithOptions() {
 function resetAll() {
   bomWorkbook = coordWorkbook = null;
   bomData = []; coordData = []; allRows = [];
+  selectedRefdes.clear();
+  updateSelBadge();
   ['bom-input','coord-input'].forEach(id => document.getElementById(id).value='');
   ['bom-drop','coord-drop'].forEach(id => {
     document.getElementById(id).classList.remove('has-file','drag-over');
