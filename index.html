@@ -615,7 +615,7 @@
   </div>
   <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
     <button onclick="openPanel('usage')" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.9);border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.22)'" onmouseout="this.style.background='rgba(255,255,255,0.12)'">📖 사용법</button>
-    <button onclick="openHistoryPanel()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.9);border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.22)'" onmouseout="this.style.background='rgba(255,255,255,0.12)'">🔒 개발 히스토리</button>
+    <button onclick="openHistoryPanel()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.9);border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.22)'" onmouseout="this.style.background='rgba(255,255,255,0.12)'">🔒 패치 노트</button>
     <div style="width:1px;height:20px;background:rgba(255,255,255,0.2);margin:0 4px;"></div>
     <div style="text-align:right;opacity:0.7;font-size:0.78rem;line-height:1.6;">
       <div style="font-weight:600;">v2026.05.14</div>
@@ -984,9 +984,19 @@ function checkSizeMatch(bomSpec, coordDecal) {
   const ci = extractInfo(coordDecal, true);
   // 양쪽 다 감지 못하면 비교 불가 → 매칭 처리
   if (!bi && !ci) return { match: true, bomSize: null, coordSize: null };
-  // 한쪽만 감지 → 비교 불가 → 매칭 처리 (false positive 방지)
+
+  // ★ 칩사이즈 특별 처리: 어느 한쪽에 칩사이즈(1608·2012·3216 등)가 있으면
+  //   상대편에도 반드시 같은 칩사이즈가 있어야 통과 (없거나 다르면 불일치)
+  if (bi?.type === 'chip' || ci?.type === 'chip') {
+    const bv = bi?.type === 'chip' ? bi.val : null;
+    const cv = ci?.type === 'chip' ? ci.val : null;
+    const match = bv !== null && cv !== null && bv === cv;
+    return { match, bomSize: bv, coordSize: cv };
+  }
+
+  // 한쪽만 감지 (칩사이즈 외 타입) → 비교 불가 → 매칭 처리 (false positive 방지)
   if (!bi || !ci) return { match: true, bomSize: bi?.val||null, coordSize: ci?.val||null };
-  // 타입 다름 (칩사이즈 vs 피치 등) → 비교 불가 → 매칭 처리
+  // 타입 다름 (피치 vs 패키지 등) → 비교 불가 → 매칭 처리
   if (bi.type !== ci.type) return { match: true, bomSize: bi.val, coordSize: ci.val };
   // 같은 타입 → 값 비교
   const match = (bi.val === ci.val);
@@ -1478,7 +1488,7 @@ function closePanel() {
   document.body.style.overflow = '';
 }
 
-// ─── 개발 히스토리 비밀번호 잠금 ────────────────────────
+// ─── 패치 노트 비밀번호 잠금 ────────────────────────
 const HISTORY_PW = '011024';
 let historyUnlocked = false;
 
@@ -1701,12 +1711,20 @@ function renderTable(rows) {
     const isCoordOnly = r.status === 'coord-only';
     const isNc = r.status === 'nc';
     const isSelected = selectedRefdes.has(r.refdes);
+    const specNote  = isMismatch
+      ? (r.bomSize ? `<span style="color:#e040fb;font-size:0.8rem"> →${r.bomSize}</span>`
+                   : `<span style="color:#ff7043;font-size:0.78rem"> ⚠️칩사이즈없음</span>`)
+      : '';
     const specCell  = isMismatch
-      ? `<td class="size-mismatch${eC}" data-refdes="${r.refdes}" data-field="bomSpec" contenteditable="${ec}" title="BOM: ${r.bomSize}  |  Coord: ${r.coordSize}" onblur="saveEdit(this)">${r.bomSpec} <span style="color:#e040fb">→${r.bomSize}</span></td>`
+      ? `<td class="size-mismatch${eC}" data-refdes="${r.refdes}" data-field="bomSpec" contenteditable="${ec}" title="BOM칩사이즈: ${r.bomSize??'없음'}  |  Coord칩사이즈: ${r.coordSize??'없음'}" onblur="saveEdit(this)">${r.bomSpec}${specNote}</td>`
       : `<td class="${eC.trim()}" data-refdes="${r.refdes}" data-field="bomSpec" contenteditable="${ec}" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.bomSpec}" onblur="saveEdit(this)">${r.bomSpec || ''}</td>`;
     const nameCell  = `<td class="${eC.trim()}" data-refdes="${r.refdes}" data-field="bomName" contenteditable="${ec}" onblur="saveEdit(this)">${r.bomName || ''}</td>`;
+    const decalNote = isMismatch
+      ? (r.coordSize ? `<span style="color:#e040fb;font-size:0.8rem"> →${r.coordSize}</span>`
+                     : `<span style="color:#ff7043;font-size:0.78rem"> ⚠️칩사이즈없음</span>`)
+      : '';
     const decalCell = isMismatch
-      ? `<td class="size-mismatch" title="BOM: ${r.bomSize}  |  Coord: ${r.coordSize}">${r.decal} <span style="color:#e040fb">→${r.coordSize}</span></td>`
+      ? `<td class="size-mismatch" title="BOM칩사이즈: ${r.bomSize??'없음'}  |  Coord칩사이즈: ${r.coordSize??'없음'}">${r.decal}${decalNote}</td>`
       : `<td>${r.decal || '<span class="na">-</span>'}</td>`;
     // NC 토글 버튼 (좌표만 / NC 행만 표시)
     const ncBtn = (isCoordOnly || isNc)
@@ -2350,7 +2368,7 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
   <!-- 버전비교 탭 상단 버튼 -->
   <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:16px;margin-top:4px;">
     <button onclick="openPanel('usage')" style="background:white;border:1px solid #c5cae9;color:#3949ab;border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;font-weight:600;transition:all 0.15s;display:flex;align-items:center;gap:5px;box-shadow:0 1px 4px rgba(0,0,0,0.07);" onmouseover="this.style.background='#e8eaf6'" onmouseout="this.style.background='white'">📖 사용법</button>
-    <button onclick="openHistoryPanel()" style="background:white;border:1px solid #c5cae9;color:#3949ab;border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;font-weight:600;transition:all 0.15s;display:flex;align-items:center;gap:5px;box-shadow:0 1px 4px rgba(0,0,0,0.07);" onmouseover="this.style.background='#e8eaf6'" onmouseout="this.style.background='white'">🔒 개발 히스토리</button>
+    <button onclick="openHistoryPanel()" style="background:white;border:1px solid #c5cae9;color:#3949ab;border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;font-weight:600;transition:all 0.15s;display:flex;align-items:center;gap:5px;box-shadow:0 1px 4px rgba(0,0,0,0.07);" onmouseover="this.style.background='#e8eaf6'" onmouseout="this.style.background='white'">🔒 패치 노트</button>
   </div>
 
   <!-- 파일 업로드 -->
@@ -2475,11 +2493,11 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
 <!-- 공용 오버레이 -->
 <div class="side-panel-overlay" id="side-overlay" onclick="closePanel()"></div>
 
-<!-- 개발 히스토리 비밀번호 모달 -->
+<!-- 패치 노트 비밀번호 모달 -->
 <div id="pw-modal" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,0.45);align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:16px;padding:32px 28px;width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.22);text-align:center;">
     <div style="font-size:2rem;margin-bottom:8px;">🔒</div>
-    <h3 style="font-size:1.1rem;color:#1a237e;margin-bottom:6px;">개발 히스토리</h3>
+    <h3 style="font-size:1.1rem;color:#1a237e;margin-bottom:6px;">패치 노트</h3>
     <p style="font-size:0.82rem;color:#888;margin-bottom:20px;">비밀번호를 입력하세요</p>
     <input id="pw-input" type="password" maxlength="20"
       onkeydown="if(event.key==='Enter')submitHistoryPw();if(event.key==='Escape')cancelHistoryPw();"
@@ -2656,14 +2674,26 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
   </div>
 </div>
 
-<!-- 개발 히스토리 패널 -->
+<!-- 패치 노트 패널 -->
 <div class="side-panel" id="panel-history">
   <div class="side-panel-hdr">
     <span style="font-size:1.2rem;">📋</span>
-    <h2>개발 히스토리</h2>
+    <h2>패치 노트</h2>
     <button class="side-panel-close" onclick="closePanel()">← 닫기</button>
   </div>
   <div class="side-panel-body">
+    <div class="history-item">
+      <div class="history-date">2026.05.21</div>
+      <div class="history-content">
+        <span class="history-tag tag-fix">FIX</span>칩사이즈 불일치 강화 — 한쪽에만 칩사이즈(1608·2012·3216 등) 있으면 불일치 처리<br>
+        <span class="history-tag tag-fix">FIX</span>불일치 셀에 칩사이즈 없음 표시 (⚠️칩사이즈없음) 추가<br>
+        <span class="history-tag tag-feat">기능</span>💡 개선 제안 피드백 모달 — Google Apps Script 자동 저장<br>
+        <span class="history-tag tag-feat">기능</span>매칭 결과 도넛 차트 — 매칭률 시각화<br>
+        <span class="history-tag tag-feat">기능</span>선택 저장 — 체크박스로 원하는 행만 골라 엑셀 저장<br>
+        <span class="history-tag tag-ui">UI</span>필터바에 전체 저장 버튼 추가 (스크롤 없이 접근)<br>
+        <span class="history-tag tag-fix">FIX</span>BOM 버전 비교 탭에서 사이드 패널 열리지 않던 버그 수정
+      </div>
+    </div>
     <div class="history-item">
       <div class="history-date">2026.05.14</div>
       <div class="history-content">
@@ -2679,7 +2709,7 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
       <div class="history-content">
         <span class="history-tag tag-feat">기능</span>📊 BOM 버전 비교 탭 추가 — 구버전 vs 신버전 전체 열 자동 비교<br>
         <span class="history-tag tag-feat">기능</span>추가·삭제·변경 부품 분류 + 엑셀 4시트 다운로드<br>
-        <span class="history-tag tag-feat">기능</span>개발 히스토리 비밀번호 잠금 (🔒)<br>
+        <span class="history-tag tag-feat">기능</span>패치 노트 비밀번호 잠금 (🔒)<br>
         <span class="history-tag tag-ui">UI</span>탭 이름 변경 — 좌표데이터·BOM 매칭 / BOM 버전 비교<br>
         <span class="history-tag tag-ui">UI</span>사용법·히스토리 슬라이드 패널로 전환<br>
         <span class="history-tag tag-fix">FIX</span>BOM 중복 UI — 중복 RefDes만 하이라이트, 규격 동일/상이 자동 판단
