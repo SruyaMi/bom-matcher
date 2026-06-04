@@ -602,7 +602,7 @@
 #cmp-results { display: none; }
 
 /* ═══════════════════════════════════════════════════════════
-   THEME SYSTEM  (v2026.05.25)
+   THEME SYSTEM  (v2026.05.28)
    — Accent colors (blue/green/purple/teal/slate)
    — Dark mode
    ═══════════════════════════════════════════════════════════ */
@@ -770,6 +770,29 @@
 [data-theme="dark"] .progress-bar            { background:#252840 !important; }
 [data-theme="dark"] .progress-bar-fill       { background:#7986cb !important; }
 
+
+/* ── Language Picker ── */
+#lang-picker {
+  display:none;position:fixed;top:64px;right:270px;z-index:6000;
+  background:white;border-radius:14px;box-shadow:0 8px 36px rgba(0,0,0,0.22);
+  padding:14px 16px;width:175px;border:1px solid #e0e0e0;
+}
+[data-theme="dark"] #lang-picker { background:#1e2130 !important; border-color:#2e3250 !important; }
+.lp-btn {
+  display:flex;align-items:center;gap:9px;width:100%;padding:8px 10px;
+  border:2px solid transparent;border-radius:8px;background:transparent;
+  cursor:pointer;font-size:0.87rem;font-weight:500;transition:all 0.15s;margin-bottom:3px;
+}
+.lp-btn:hover { background:#f5f5f5; }
+.lp-btn.lp-active { border-color:#3949ab;background:#e8eaf6;color:#1a237e;font-weight:700; }
+[data-accent="green"]  .lp-btn.lp-active { border-color:#388e3c;background:#e8f5e9;color:#1b5e20; }
+[data-accent="purple"] .lp-btn.lp-active { border-color:#7b1fa2;background:#f3e5f5;color:#4a148c; }
+[data-accent="teal"]   .lp-btn.lp-active { border-color:#00796b;background:#e0f2f1;color:#004d40; }
+[data-accent="slate"]  .lp-btn.lp-active { border-color:#37474f;background:#eceff1;color:#1c2833; }
+[data-theme="dark"] .lp-btn { color:#d0d4e0; }
+[data-theme="dark"] .lp-btn:hover { background:#252840; }
+[data-theme="dark"] .lp-btn.lp-active { background:#252840;border-color:#7986cb;color:#9fa8da; }
+
 </style>
 </head>
 <body>
@@ -779,25 +802,26 @@
   <img src="data:image/png;base64,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" width="52" height="52" alt="로고" style="flex-shrink:0;border-radius:10px;cursor:pointer;" onclick="openLogoModal(this)">
 
   <div>
-    <h1>🔍 BOM ↔ 아트웍 좌표 매칭 툴</h1>
-    <span>PCB BOM과 좌표 데이터를 비교하여 매칭 현황을 분석합니다</span>
+    <h1 data-i18n="headerTitle">🔍 BOM ↔ 아트웍 좌표 매칭 툴</h1>
+    <span data-i18n="headerSub">PCB BOM과 좌표 데이터를 비교하여 매칭 현황을 분석합니다</span>
   </div>
   <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
-    <button onclick="openPanel('usage')" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.9);border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.22)'" onmouseout="this.style.background='rgba(255,255,255,0.12)'">📖 사용법</button>
-    <button onclick="openHistoryPanel()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.9);border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.22)'" onmouseout="this.style.background='rgba(255,255,255,0.12)'">🔒 패치 노트</button>
-    <button id="theme-toggle-btn" onclick="openThemePicker(event)" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.9);border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.22)'" onmouseout="this.style.background='rgba(255,255,255,0.12)'">🎨 테마</button>
+    <button onclick="openPanel('usage')" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.9);border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.22)'" onmouseout="this.style.background='rgba(255,255,255,0.12)'" data-i18n="btnGuide">📖 사용법</button>
+    <button onclick="openHistoryPanel()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.9);border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.22)'" onmouseout="this.style.background='rgba(255,255,255,0.12)'" data-i18n="btnPatchNotes">🔒 패치 노트</button>
+    <button id="lang-toggle-btn" onclick="openLangPicker(event)" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.9);border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.22)'" onmouseout="this.style.background='rgba(255,255,255,0.12)'">🌐 KO</button>
+    <button id="theme-toggle-btn" onclick="openThemePicker(event)" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.9);border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.22)'" onmouseout="this.style.background='rgba(255,255,255,0.12)'" data-i18n="btnTheme">🎨 테마</button>
     <div style="width:1px;height:20px;background:rgba(255,255,255,0.2);margin:0 4px;"></div>
     <div style="text-align:right;opacity:0.7;font-size:0.78rem;line-height:1.6;">
-      <div style="font-weight:600;">v2026.05.25</div>
+      <div style="font-weight:600;">v2026.05.28</div>
       <div>JYH</div>
     </div>
   </div>
 </header>
 
 <nav id="tab-nav">
-  <button class="tab-btn active" id="tab-btn-match" onclick="switchTab('match')">🔍 좌표데이터·BOM 매칭</button>
-  <button class="tab-btn" id="tab-btn-compare" onclick="switchTab('compare')">📊 BOM 버전 비교</button>
-  <button onclick="openFeedback()" style="margin-left:auto;margin-top:8px;margin-bottom:8px;margin-right:4px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.85);border-radius:18px;padding:5px 14px;cursor:pointer;font-size:0.78rem;font-weight:600;transition:all 0.15s;white-space:nowrap;display:flex;align-items:center;gap:5px;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">💡 개선 제안</button>
+  <button class="tab-btn active" id="tab-btn-match" onclick="switchTab('match')" data-i18n="tabMatch">🔍 좌표데이터·BOM 매칭</button>
+  <button class="tab-btn" id="tab-btn-compare" onclick="switchTab('compare')" data-i18n="tabCompare">📊 BOM 버전 비교</button>
+  <button onclick="openFeedback()" style="margin-left:auto;margin-top:8px;margin-bottom:8px;margin-right:4px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.85);border-radius:18px;padding:5px 14px;cursor:pointer;font-size:0.78rem;font-weight:600;transition:all 0.15s;white-space:nowrap;display:flex;align-items:center;gap:5px;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'" data-i18n="btnSuggest">💡 개선 제안</button>
 </nav>
 
 <div id="page-match">
@@ -808,18 +832,18 @@
     <!-- BOM -->
     <div class="upload-card" id="bom-card">
       <h3>
-        <span>📋</span> BOM 파일
-        <span class="badge" id="bom-badge">미업로드</span>
+        <span>📋</span> <span data-i18n="bomFile">BOM 파일</span>
+        <span class="badge" id="bom-badge" data-i18n="notUploaded">미업로드</span>
       </h3>
       <div class="drop-zone" id="bom-drop" onclick="document.getElementById('bom-input').click()">
         <div class="icon">📁</div>
-        <p>클릭하거나 파일을 끌어다 놓으세요</p>
-        <p style="font-size:0.78rem;margin-top:4px;color:#999">.xlsx, .xls 지원</p>
+        <p data-i18n="dropZoneText">클릭하거나 파일을 끌어다 놓으세요</p>
+        <p data-i18n="dropZoneSub" style="font-size:0.78rem;margin-top:4px;color:#999">.xlsx, .xls 지원</p>
         <div class="filename" id="bom-filename"></div>
         <input type="file" id="bom-input" accept=".xlsx,.xls">
       </div>
       <div class="sheet-selector" id="bom-sheet-sel">
-        <label>📊 시트 선택</label>
+        <label data-i18n="sheetSelect">📊 시트 선택</label>
         <select id="bom-sheet" onchange="onBomSheetChange()"></select>
       </div>
     </div>
@@ -827,18 +851,18 @@
     <!-- Coordinate -->
     <div class="upload-card" id="coord-card">
       <h3>
-        <span>📍</span> 좌표 데이터 파일
-        <span class="badge" id="coord-badge">미업로드</span>
+        <span>📍</span> <span data-i18n="coordFile">좌표 데이터 파일</span>
+        <span class="badge" id="coord-badge" data-i18n="notUploaded">미업로드</span>
       </h3>
       <div class="drop-zone" id="coord-drop" onclick="document.getElementById('coord-input').click()">
         <div class="icon">📁</div>
-        <p>클릭하거나 파일을 끌어다 놓으세요</p>
-        <p style="font-size:0.78rem;margin-top:4px;color:#999">.xlsx, .xls 지원</p>
+        <p data-i18n="dropZoneText">클릭하거나 파일을 끌어다 놓으세요</p>
+        <p data-i18n="dropZoneSub" style="font-size:0.78rem;margin-top:4px;color:#999">.xlsx, .xls 지원</p>
         <div class="filename" id="coord-filename"></div>
         <input type="file" id="coord-input" accept=".xlsx,.xls">
       </div>
       <div class="sheet-selector" id="coord-sheet-sel">
-        <label>📊 시트 선택</label>
+        <label data-i18n="sheetSelect">📊 시트 선택</label>
         <select id="coord-sheet" onchange="onCoordSheetChange()"></select>
       </div>
     </div>
@@ -846,22 +870,22 @@
 
   <!-- Config Section -->
   <div class="config-section" id="config-section" style="display:none">
-    <h3>⚙️ 매칭 설정</h3>
+    <h3 data-i18n="cfgTitle">⚙️ 매칭 설정</h3>
     <div class="config-grid">
       <div class="config-item">
-        <label>BOM - Location 컬럼 (RefDes)</label>
+        <label data-i18n="cfgBomLoc">BOM - Location 컬럼 (RefDes)</label>
         <select id="bom-loc-col"></select>
       </div>
       <div class="config-item">
-        <label>BOM - 품명 컬럼</label>
+        <label data-i18n="cfgBomName">BOM - 품명 컬럼</label>
         <select id="bom-name-col"></select>
       </div>
       <div class="config-item">
-        <label>BOM - 규격 컬럼</label>
+        <label data-i18n="cfgBomSpec">BOM - 규격 컬럼</label>
         <select id="bom-spec-col"></select>
       </div>
       <div class="config-item">
-        <label>BOM - Maker 컬럼</label>
+        <label data-i18n="cfgBomMaker">BOM - Maker 컬럼</label>
         <select id="bom-maker-col"></select>
       </div>
       <div class="config-item">
@@ -945,15 +969,9 @@
 
   <!-- Action Row -->
   <div class="action-row">
-    <button class="btn btn-primary" id="match-btn" onclick="runMatch()" disabled>
-      🔗 매칭 실행
-    </button>
-    <button class="btn btn-export" id="export-btn" onclick="exportExcel()" disabled>
-      📥 Excel 내보내기
-    </button>
-    <button class="btn btn-secondary" onclick="resetAll()">
-      🔄 초기화
-    </button>
+    <button class="btn btn-primary" id="match-btn" onclick="runMatch()" disabled data-i18n="btnRunMatch">🔗 매칭 실행</button>
+    <button class="btn btn-export" id="export-btn" onclick="exportExcel()" disabled data-i18n="btnExcel">📥 Excel 내보내기</button>
+    <button class="btn btn-secondary" onclick="resetAll()" data-i18n="btnReset">🔄 초기화</button>
     <div id="status-msg" style="font-size:0.85rem;color:#666;margin-left:8px;"></div>
   </div>
 
@@ -961,31 +979,31 @@
   <div class="summary-cards" id="summary" style="display:none">
     <div class="card total">
       <div class="num" id="s-total">-</div>
-      <div class="label">전체 RefDes (BOM)</div>
+      <div class="label" data-i18n="sTotal">전체 RefDes (BOM)</div>
     </div>
     <div class="card matched">
       <div class="num" id="s-matched">-</div>
-      <div class="label">매칭 성공 ✅</div>
+      <div class="label" data-i18n="sMatched">매칭 성공 ✅</div>
     </div>
     <div class="card mismatch">
       <div class="num" id="s-mismatch">-</div>
-      <div class="label">규격 불일치 ⚡</div>
+      <div class="label" data-i18n="sMismatch">규격 불일치 ⚡</div>
     </div>
     <div class="card bom-only">
       <div class="num" id="s-bom-only">-</div>
-      <div class="label">BOM에만 있음 ❌</div>
+      <div class="label" data-i18n="sBomOnly">BOM에만 있음 ❌</div>
     </div>
     <div class="card coord-only">
       <div class="num" id="s-coord-only">-</div>
-      <div class="label">좌표에만 있음 ⚠️</div>
+      <div class="label" data-i18n="sCoordOnly">좌표에만 있음 ⚠️</div>
     </div>
     <div class="card nc">
       <div class="num" id="s-nc">-</div>
-      <div class="label">NC 항목 🚫</div>
+      <div class="label" data-i18n="sNc">NC 항목 🚫</div>
     </div>
     <div class="card coverage">
       <div class="num" id="s-coverage">-</div>
-      <div class="label">매칭률</div>
+      <div class="label" data-i18n="sCoverage">매칭률</div>
     </div>
   </div>
 
@@ -999,13 +1017,13 @@
 
   <!-- Filter Bar -->
   <div class="filter-bar" id="filter-bar" style="display:none">
-    <button class="filter-btn active" data-filter="all" onclick="setFilter('all',this)">전체</button>
-    <button class="filter-btn f-matched" data-filter="matched" onclick="setFilter('matched',this)">✅ 매칭</button>
-    <button class="filter-btn f-mismatch" data-filter="mismatch" onclick="setFilter('mismatch',this)">⚡ 규격불일치</button>
-    <button class="filter-btn f-bom-only" data-filter="bom-only" onclick="setFilter('bom-only',this)">❌ BOM만</button>
-    <button class="filter-btn f-coord-only" data-filter="coord-only" onclick="setFilter('coord-only',this)">⚠️ 좌표만</button>
-    <button class="filter-btn f-nc" data-filter="nc" onclick="setFilter('nc',this)">🚫 NC</button>
-    <button class="filter-btn f-dup" data-filter="dup" id="dup-filter-btn" onclick="setFilter('dup',this)">⚠ BOM중복</button>
+    <button class="filter-btn active" data-filter="all" onclick="setFilter('all',this)" data-i18n="fAll">전체</button>
+    <button class="filter-btn f-matched" data-filter="matched" onclick="setFilter('matched',this)" data-i18n="fMatched">✅ 매칭</button>
+    <button class="filter-btn f-mismatch" data-filter="mismatch" onclick="setFilter('mismatch',this)" data-i18n="fMismatch">⚡ 규격불일치</button>
+    <button class="filter-btn f-bom-only" data-filter="bom-only" onclick="setFilter('bom-only',this)" data-i18n="fBomOnly">❌ BOM만</button>
+    <button class="filter-btn f-coord-only" data-filter="coord-only" onclick="setFilter('coord-only',this)" data-i18n="fCoordOnly">⚠️ 좌표만</button>
+    <button class="filter-btn f-nc" data-filter="nc" onclick="setFilter('nc',this)" data-i18n="fNc">🚫 NC</button>
+    <button class="filter-btn f-dup" data-filter="dup" id="dup-filter-btn" onclick="setFilter('dup',this)" data-i18n="fDup">⚠ BOM중복</button>
     <div class="filter-divider"></div>
     <div id="info-btn-group" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"></div>
     <input class="search-box" type="text" id="search-input" placeholder="🔍 RefDes 검색..." oninput="applyFilter()">
@@ -1058,9 +1076,9 @@
           <tr>
             <th class="chk-col"><input type="checkbox" class="row-chk" id="chk-all" onclick="toggleSelectAll(this)" title="전체 선택/해제"></th>
             <th>RefDes</th>
-            <th>상태</th>
-            <th>품명 (BOM)</th>
-            <th>규격 (BOM)</th>
+            <th data-i18n="thStatus">상태</th>
+            <th data-i18n="thPartName">품명 (BOM)</th>
+            <th data-i18n="thSpec">규격 (BOM)</th>
             <th>Maker</th>
             <th>PCB Decal</th>
             <th>Layer</th>
@@ -1076,7 +1094,7 @@
             <td colspan="13">
               <div class="empty-state">
                 <div class="icon">📂</div>
-                <p>BOM 파일과 좌표 데이터 파일을 업로드한 후 매칭을 실행하세요</p>
+                <p data-i18n="emptyState">BOM 파일과 좌표 데이터 파일을 업로드한 후 매칭을 실행하세요</p>
               </div>
             </td>
           </tr>
@@ -1091,13 +1109,13 @@
 <div id="preview-modal">
   <div class="preview-box">
     <div class="preview-header">
-      <h3>📋 변경 내용 미리보기</h3>
+      <h3 data-i18n="previewTitle">📋 변경 내용 미리보기</h3>
       <button onclick="closePreview()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#888;line-height:1;">✕</button>
     </div>
     <div class="preview-body" id="preview-body"></div>
     <div class="preview-footer">
-      <button class="btn btn-secondary" onclick="closePreview()">닫기</button>
-      <button class="btn btn-export" onclick="closePreview();exportWithOptions()">📥 엑셀 다운로드</button>
+      <button class="btn btn-secondary" onclick="closePreview()" data-i18n="btnClose">닫기</button>
+      <button class="btn btn-export" onclick="closePreview();exportWithOptions()" data-i18n="btnExcelDl">📥 엑셀 다운로드</button>
     </div>
   </div>
 </div>
@@ -1309,7 +1327,7 @@ function runMatch() {
   const _dbgDecal = document.getElementById('coord-decal-col').value;
   console.log('[매칭] BOM 규격 컬럼:', _dbgSpec, '/ Coord Decal 컬럼:', _dbgDecal);
   if (!_dbgSpec || !_dbgDecal) {
-    alert('⚠️ BOM 규격 또는 Coord Decal 컬럼이 선택되지 않았습니다.\n설정을 확인해주세요.');
+    alert(t('alertNoCol'));
     return;
   }
 
@@ -1709,7 +1727,7 @@ function sendFeedback() {
 
   // Apps Script 엔드포인트 미설정 시 안내
   if (!FEEDBACK_ENDPOINT) {
-    showToast('⚠️ FEEDBACK_ENDPOINT가 설정되지 않았습니다', true);
+    showToast(t('alertNoEndpoint'), true);
     return;
   }
 
@@ -1718,7 +1736,7 @@ function sendFeedback() {
     type,
     title,
     content,
-    version: 'v2026.05.25'
+    version: 'v2026.05.28'
   };
 
   // 전송 버튼 로딩 표시
@@ -1734,7 +1752,7 @@ function sendFeedback() {
     body: JSON.stringify(payload)
   })
   .then(() => {
-    showToast('✅ 피드백이 전송되었습니다! 감사합니다 😊');
+    showToast(t('toastFbOk'));
     closeFeedback();
     document.getElementById('fb-name').value    = '';
     document.getElementById('fb-title').value   = '';
@@ -1742,7 +1760,7 @@ function sendFeedback() {
     document.getElementById('fb-type').value    = '기능요청';
   })
   .catch(() => {
-    showToast('❌ 전송 실패. 네트워크를 확인해주세요.', true);
+    showToast(t('toastFbFail'), true);
   })
   .finally(() => {
     btn.innerHTML = '📨 제출하기';
@@ -1969,11 +1987,11 @@ function updateSelBadge() {
 // ─── 선택 항목 내보내기 ──────────────────────────────────
 function exportSelected() {
   if (selectedRefdes.size === 0) {
-    alert('저장할 항목을 먼저 체크해주세요 ☑️');
+    alert(t('alertNoCheck'));
     return;
   }
   const rows = allRows.filter(r => selectedRefdes.has(r.refdes));
-  const statusKo = { matched:'매칭', mismatch:'규격불일치', 'bom-only':'BOM만', 'coord-only':'좌표만', nc:'NC' };
+  const statusKo = t('statusLabels');
   const data = rows.map(r => ({
     'RefDes': r.refdes,
     '상태': statusKo[r.status] || r.status,
@@ -2006,11 +2024,11 @@ function exportSelected() {
 function drawDonutChart(matched, mismatch, bomOnly, coordOnly, ncCount) {
   const cx = 85, cy = 85, R = 68, r = 44;
   const segments = [
-    { label: '매칭',      count: matched,   color: '#4caf50' },
-    { label: '규격불일치', count: mismatch,  color: '#e040fb' },
-    { label: 'BOM만',     count: bomOnly,   color: '#ef5350' },
-    { label: '좌표만',    count: coordOnly, color: '#ff9800' },
-    { label: 'NC',        count: ncCount,   color: '#78909c' },
+    { label: t('legendMatched'),   count: matched,   color: '#4caf50' },
+    { label: t('legendMismatch'),  count: mismatch,  color: '#e040fb' },
+    { label: t('legendBomOnly'),   count: bomOnly,   color: '#ef5350' },
+    { label: t('legendCoordOnly'), count: coordOnly, color: '#ff9800' },
+    { label: t('legendNc'),        count: ncCount,   color: '#78909c' },
   ].filter(s => s.count > 0);
 
   const total = segments.reduce((s, x) => s + x.count, 0);
@@ -2035,18 +2053,18 @@ function drawDonutChart(matched, mismatch, bomOnly, coordOnly, ncCount) {
   // 중앙 텍스트
   const pct = Math.round((matched + mismatch) / (matched + mismatch + bomOnly) * 100) || 0;
   paths += `<text x="${cx}" y="${cy - 9}" text-anchor="middle" font-size="24" font-weight="800" fill="#1a237e">${pct}%</text>`;
-  paths += `<text x="${cx}" y="${cy + 10}" text-anchor="middle" font-size="10" fill="#888">매칭률</text>`;
-  paths += `<text x="${cx}" y="${cy + 24}" text-anchor="middle" font-size="10" fill="#aaa">BOM ${matched+mismatch+bomOnly}개</text>`;
+  paths += `<text x="${cx}" y="${cy + 10}" text-anchor="middle" font-size="10" fill="#888">${t('donutMatchRate')}</text>`;
+  paths += `<text x="${cx}" y="${cy + 24}" text-anchor="middle" font-size="10" fill="#aaa">BOM ${matched+mismatch+bomOnly}</text>`;
 
   document.getElementById('donut-svg').innerHTML = paths;
 
   // 범례
   const all = [
-    { label: '매칭',      count: matched,   color: '#4caf50' },
-    { label: '규격불일치', count: mismatch,  color: '#e040fb' },
-    { label: 'BOM만',     count: bomOnly,   color: '#ef5350' },
-    { label: '좌표만',    count: coordOnly, color: '#ff9800' },
-    { label: 'NC',        count: ncCount,   color: '#78909c' },
+    { label: t('legendMatched'),   count: matched,   color: '#4caf50' },
+    { label: t('legendMismatch'),  count: mismatch,  color: '#e040fb' },
+    { label: t('legendBomOnly'),   count: bomOnly,   color: '#ef5350' },
+    { label: t('legendCoordOnly'), count: coordOnly, color: '#ff9800' },
+    { label: t('legendNc'),        count: ncCount,   color: '#78909c' },
   ];
   const grandTotal = all.reduce((s,x) => s+x.count, 0);
   document.getElementById('donut-legend').innerHTML = all.map(s => `
@@ -2073,13 +2091,10 @@ function exportFiltered() {
     r.decal.toLowerCase().includes(q)
   );
 
-  if (rows.length === 0) { alert('내보낼 항목이 없습니다.'); return; }
+  if (rows.length === 0) { alert(t('alertNoExport')); return; }
 
-  const statusKo = { matched:'매칭', mismatch:'규격불일치', 'bom-only':'BOM만', 'coord-only':'좌표만', nc:'NC' };
-  const filterName = {
-    all:'전체', matched:'매칭', mismatch:'규격불일치',
-    'bom-only':'BOM만', 'coord-only':'좌표만', nc:'NC', dup:'BOM중복'
-  }[currentFilter] || currentFilter;
+  const statusKo = t('statusLabels');
+  const filterName = (t('filterNames')[currentFilter]) || currentFilter;
 
   const data = rows.map(r => ({
     'RefDes': r.refdes,
@@ -2175,7 +2190,7 @@ function updateNcStats() {
 
 // ─── Export to Excel ──────────────────────────────────────
 function exportExcel() {
-  const statusKo = { matched:'매칭', mismatch:'규격불일치', 'bom-only':'BOM만', 'coord-only':'좌표만', nc:'NC' };
+  const statusKo = t('statusLabels');
   const data = allRows.map(r => ({
     'RefDes': r.refdes,
     '상태': statusKo[r.status],
@@ -2353,7 +2368,7 @@ function exportWithOptions() {
   const bNameCol = document.getElementById('bom-name-col').value;
   const bSpecCol = document.getElementById('bom-spec-col').value;
   const RPAT = /^[A-Za-z]{1,6}\d/;
-  const statusKo = { matched:'매칭', mismatch:'규격불일치', 'bom-only':'BOM만', 'coord-only':'좌표만', nc:'NC' };
+  const statusKo = t('statusLabels');
 
   // RefDes → allRows 빠른 조회맵
   const rdMap = {};
@@ -2514,49 +2529,49 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
 </script>
 
 <!-- FAB -->
-<button id="fab-edit" onclick="openEditPanel()">✏️ 수정 페이지</button>
+<button id="fab-edit" onclick="openEditPanel()" data-i18n="fabEdit">✏️ 수정 페이지</button>
 
 <!-- ═══ 수정 페이지 슬라이드 패널 ═══ -->
 <div id="edit-overlay" onclick="closeEditPanel()"></div>
 <div id="edit-panel">
   <div class="edit-panel-header">
     <span style="font-size:1.3rem;">✏️</span>
-    <h2>수정 및 내보내기</h2>
-    <button class="edit-back-btn" onclick="closeEditPanel()">← 돌아가기</button>
+    <h2 data-i18n="editTitle">수정 및 내보내기</h2>
+    <button class="edit-back-btn" onclick="closeEditPanel()" data-i18n="editBack">← 돌아가기</button>
   </div>
   <div class="edit-panel-body">
     <!-- 요약 -->
     <div id="edit-summary" class="edit-summary" style="display:none">
-      <div class="edit-stat"><div class="num" id="es-total" style="color:#1a237e;">-</div><div class="lbl">전체</div></div>
-      <div class="edit-stat"><div class="num" id="es-match" style="color:#2e7d32;">-</div><div class="lbl">매칭</div></div>
-      <div class="edit-stat"><div class="num" id="es-mis" style="color:#ad1457;">-</div><div class="lbl">불일치</div></div>
-      <div class="edit-stat"><div class="num" id="es-bom" style="color:#c62828;">-</div><div class="lbl">BOM만</div></div>
-      <div class="edit-stat"><div class="num" id="es-coord" style="color:#e65100;">-</div><div class="lbl">좌표만</div></div>
-      <div class="edit-stat"><div class="num" id="es-dup" style="color:#6a1b9a;">-</div><div class="lbl">중복</div></div>
+      <div class="edit-stat"><div class="num" id="es-total" style="color:#1a237e;">-</div><div class="lbl" data-i18n="esTotal">전체</div></div>
+      <div class="edit-stat"><div class="num" id="es-match" style="color:#2e7d32;">-</div><div class="lbl" data-i18n="esMatch">매칭</div></div>
+      <div class="edit-stat"><div class="num" id="es-mis" style="color:#ad1457;">-</div><div class="lbl" data-i18n="esMis">불일치</div></div>
+      <div class="edit-stat"><div class="num" id="es-bom" style="color:#c62828;">-</div><div class="lbl" data-i18n="esBom">BOM만</div></div>
+      <div class="edit-stat"><div class="num" id="es-coord" style="color:#e65100;">-</div><div class="lbl" data-i18n="esCoord">좌표만</div></div>
+      <div class="edit-stat"><div class="num" id="es-dup" style="color:#6a1b9a;">-</div><div class="lbl" data-i18n="esDup">중복</div></div>
     </div>
 
     <!-- 항목 처리 -->
     <div class="edit-section">
-      <h4>🔧 항목 처리</h4>
-      <label class="chk-item"><input type="checkbox" id="opt-del-bom-only"><span>BOM only 항목 삭제<span class="chk-desc">좌표에 없는 부품을 출력에서 제외</span></span></label>
-      <label class="chk-item"><input type="checkbox" id="opt-add-coord-only"><span>좌표 only 항목 BOM 추가<span class="chk-desc">BOM에 없는 좌표 항목을 추가</span></span></label>
-      <label class="chk-item"><input type="checkbox" id="opt-del-dup"><span>BOM 중복 항목 제거<span class="chk-desc">중복 RefDes 중 마지막 행만 유지</span></span></label>
-      <label class="chk-item"><input type="checkbox" id="opt-inline-edit" onchange="toggleInlineEdit(this.checked)"><span>웹에서 직접 셀 수정<span class="chk-desc">품명·규격 셀 클릭 후 바로 수정 가능</span></span></label>
+      <h4 data-i18n="editSecItems">🔧 항목 처리</h4>
+      <label class="chk-item"><input type="checkbox" id="opt-del-bom-only"><span data-i18n="editDelBom">BOM only 항목 삭제</span><span class="chk-desc" data-i18n="editDelBomDesc">좌표에 없는 부품을 출력에서 제외</span></label>
+      <label class="chk-item"><input type="checkbox" id="opt-add-coord-only"><span data-i18n="editAddCoord">좌표 only 항목 BOM 추가</span><span class="chk-desc" data-i18n="editAddCoordDesc">BOM에 없는 좌표 항목을 추가</span></label>
+      <label class="chk-item"><input type="checkbox" id="opt-del-dup"><span data-i18n="editDelDup">BOM 중복 항목 제거</span><span class="chk-desc" data-i18n="editDelDupDesc">중복 RefDes 중 마지막 행만 유지</span></label>
+      <label class="chk-item"><input type="checkbox" id="opt-inline-edit" onchange="toggleInlineEdit(this.checked)"><span data-i18n="editInline">웹에서 직접 셀 수정</span><span class="chk-desc" data-i18n="editInlineDesc">품명·규격 셀 클릭 후 바로 수정 가능</span></label>
     </div>
 
     <!-- 엑셀 출력 옵션 -->
     <div class="edit-section">
-      <h4>📊 엑셀 출력 옵션</h4>
-      <label class="chk-item"><input type="checkbox" id="opt-mismatch-report" checked><span>불일치 리포트 시트<span class="chk-desc">RefDes / BOM값 / 좌표값 비교</span></span></label>
-      <label class="chk-item"><input type="checkbox" id="opt-before-after"><span>수정 전/후 시트 분리<span class="chk-desc">원본 + 수정본 시트 따로 출력</span></span></label>
-      <label class="chk-item"><input type="checkbox" id="opt-change-log"><span>변경 이력 로그 시트<span class="chk-desc">삭제·추가·수정 내역 기록</span></span></label>
-      <label class="chk-item"><input type="checkbox" id="opt-excluded-sheet"><span>제외 항목 별도 시트<span class="chk-desc">FIDUCIAL, HOLE 제외 항목 포함</span></span></label>
-      <label class="chk-item"><input type="checkbox" id="opt-accessory-sheet"><span>부속품(FOR...) 별도 시트<span class="chk-desc">FOR 패턴 항목을 시트로 분리</span></span></label>
+      <h4 data-i18n="editSecExcel">📊 엑셀 출력 옵션</h4>
+      <label class="chk-item"><input type="checkbox" id="opt-mismatch-report" checked><span data-i18n="editMismatchSheet">불일치 리포트 시트</span><span class="chk-desc" data-i18n="editMismatchSheetDesc">RefDes / BOM값 / 좌표값 비교</span></label>
+      <label class="chk-item"><input type="checkbox" id="opt-before-after"><span data-i18n="editBeforeAfter">수정 전/후 시트 분리</span><span class="chk-desc" data-i18n="editBeforeAfterDesc">원본 + 수정본 시트 따로 출력</span></label>
+      <label class="chk-item"><input type="checkbox" id="opt-change-log"><span data-i18n="editChangeLog">변경 이력 로그 시트</span><span class="chk-desc" data-i18n="editChangeLogDesc">삭제·추가·수정 내역 기록</span></label>
+      <label class="chk-item"><input type="checkbox" id="opt-excluded-sheet"><span data-i18n="editExclSheet">제외 항목 별도 시트</span><span class="chk-desc" data-i18n="editExclSheetDesc">FIDUCIAL, HOLE 제외 항목 포함</span></label>
+      <label class="chk-item"><input type="checkbox" id="opt-accessory-sheet"><span data-i18n="editAccSheet">부속품(FOR...) 별도 시트</span><span class="chk-desc" data-i18n="editAccSheetDesc">FOR 패턴 항목을 시트로 분리</span></label>
     </div>
   </div>
   <div class="edit-panel-footer">
-    <button class="btn btn-preview" onclick="previewChanges()" style="flex:1;">🔍 미리보기</button>
-    <button class="btn btn-export" onclick="exportWithOptions()" style="flex:1;">📥 엑셀 다운로드</button>
+    <button class="btn btn-preview" onclick="previewChanges()" style="flex:1;" data-i18n="editPreview">🔍 미리보기</button>
+    <button class="btn btn-export" onclick="exportWithOptions()" style="flex:1;" data-i18n="editExcelDl">📥 엑셀 다운로드</button>
   </div>
 </div>
 
@@ -2570,15 +2585,15 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
 
   <!-- 버전비교 탭 상단 버튼 -->
   <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:16px;margin-top:4px;">
-    <button onclick="openPanel('usage')" style="background:white;border:1px solid #c5cae9;color:#3949ab;border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;font-weight:600;transition:all 0.15s;display:flex;align-items:center;gap:5px;box-shadow:0 1px 4px rgba(0,0,0,0.07);" onmouseover="this.style.background='#e8eaf6'" onmouseout="this.style.background='white'">📖 사용법</button>
-    <button onclick="openHistoryPanel()" style="background:white;border:1px solid #c5cae9;color:#3949ab;border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;font-weight:600;transition:all 0.15s;display:flex;align-items:center;gap:5px;box-shadow:0 1px 4px rgba(0,0,0,0.07);" onmouseover="this.style.background='#e8eaf6'" onmouseout="this.style.background='white'">🔒 패치 노트</button>
+    <button onclick="openPanel('usage')" style="background:white;border:1px solid #c5cae9;color:#3949ab;border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;font-weight:600;transition:all 0.15s;display:flex;align-items:center;gap:5px;box-shadow:0 1px 4px rgba(0,0,0,0.07);" onmouseover="this.style.background='#e8eaf6'" onmouseout="this.style.background='white'" data-i18n="btnGuide">📖 사용법</button>
+    <button onclick="openHistoryPanel()" style="background:white;border:1px solid #c5cae9;color:#3949ab;border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;font-weight:600;transition:all 0.15s;display:flex;align-items:center;gap:5px;box-shadow:0 1px 4px rgba(0,0,0,0.07);" onmouseover="this.style.background='#e8eaf6'" onmouseout="this.style.background='white'" data-i18n="btnPatchNotes">🔒 패치 노트</button>
   </div>
 
   <!-- 파일 업로드 -->
   <div class="cmp-upload-grid">
     <!-- 구버전 -->
     <div class="upload-card" id="cmp-old-card">
-      <h3><span>📂</span> 구버전 BOM <span class="badge" id="cmp-old-badge">미업로드</span></h3>
+      <h3><span>📂</span> 구버전 BOM <span class="badge" id="cmp-old-badge" data-i18n="notUploaded">미업로드</span></h3>
       <div class="drop-zone" id="cmp-old-drop" onclick="document.getElementById('cmp-old-input').click()">
         <div class="icon">📁</div>
         <p>구버전 BOM 엑셀 파일을 올려주세요</p>
@@ -2588,7 +2603,7 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
     </div>
     <!-- 신버전 -->
     <div class="upload-card" id="cmp-new-card">
-      <h3><span>📂</span> 신버전 BOM <span class="badge" id="cmp-new-badge">미업로드</span></h3>
+      <h3><span>📂</span> 신버전 BOM <span class="badge" id="cmp-new-badge" data-i18n="notUploaded">미업로드</span></h3>
       <div class="drop-zone" id="cmp-new-drop" onclick="document.getElementById('cmp-new-input').click()">
         <div class="icon">📁</div>
         <p>신버전 BOM 엑셀 파일을 올려주세요</p>
@@ -2627,15 +2642,15 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
     <div class="cmp-summary-grid">
       <div class="cmp-sum-card added">
         <div class="cmp-cnt" id="cnt-added">0</div>
-        <div class="cmp-lbl">➕ 추가된 부품</div>
+        <div class="cmp-lbl" data-i18n="cmpAdded">➕ 추가된 부품</div>
       </div>
       <div class="cmp-sum-card deleted">
         <div class="cmp-cnt" id="cnt-deleted">0</div>
-        <div class="cmp-lbl">➖ 삭제된 부품</div>
+        <div class="cmp-lbl" data-i18n="cmpDeleted">➖ 삭제된 부품</div>
       </div>
       <div class="cmp-sum-card changed">
         <div class="cmp-cnt" id="cnt-changed">0</div>
-        <div class="cmp-lbl">🔄 변경된 부품</div>
+        <div class="cmp-lbl" data-i18n="cmpChanged">🔄 변경된 부품</div>
       </div>
     </div>
 
@@ -2700,16 +2715,16 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
 <div id="pw-modal" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,0.45);align-items:center;justify-content:center;">
   <div style="background:#fff;border-radius:16px;padding:32px 28px;width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.22);text-align:center;">
     <div style="font-size:2rem;margin-bottom:8px;">🔒</div>
-    <h3 style="font-size:1.1rem;color:#1a237e;margin-bottom:6px;">패치 노트</h3>
-    <p style="font-size:0.82rem;color:#888;margin-bottom:20px;">비밀번호를 입력하세요</p>
+    <h3 style="font-size:1.1rem;color:#1a237e;margin-bottom:6px;" data-i18n="btnPatchNotes">패치 노트</h3>
+    <p style="font-size:0.82rem;color:#888;margin-bottom:20px;" data-i18n="pwPrompt">비밀번호를 입력하세요</p>
     <input id="pw-input" type="password" maxlength="20"
       onkeydown="if(event.key==='Enter')submitHistoryPw();if(event.key==='Escape')cancelHistoryPw();"
       style="width:100%;border:2px solid #c5cae9;border-radius:8px;padding:10px 14px;font-size:1rem;text-align:center;letter-spacing:4px;outline:none;transition:border-color 0.2s;"
       onfocus="this.style.borderColor='#3949ab'" onblur="this.style.borderColor='#c5cae9'">
-    <div id="pw-error" style="display:none;color:#e53935;font-size:0.82rem;margin-top:8px;">❌ 비밀번호가 틀렸습니다</div>
+    <div id="pw-error" style="display:none;color:#e53935;font-size:0.82rem;margin-top:8px;" data-i18n="pwWrong">❌ 비밀번호가 틀렸습니다</div>
     <div style="display:flex;gap:10px;margin-top:18px;">
-      <button onclick="cancelHistoryPw()" style="flex:1;padding:9px;border:1px solid #ddd;border-radius:8px;background:#f5f5f5;color:#666;cursor:pointer;font-size:0.9rem;">취소</button>
-      <button onclick="submitHistoryPw()" style="flex:1;padding:9px;border:none;border-radius:8px;background:#1a237e;color:#fff;cursor:pointer;font-size:0.9rem;font-weight:600;">확인</button>
+      <button onclick="cancelHistoryPw()" style="flex:1;padding:9px;border:1px solid #ddd;border-radius:8px;background:#f5f5f5;color:#666;cursor:pointer;font-size:0.9rem;" data-i18n="btnCancel">취소</button>
+      <button onclick="submitHistoryPw()" style="flex:1;padding:9px;border:none;border-radius:8px;background:#1a237e;color:#fff;cursor:pointer;font-size:0.9rem;font-weight:600;" data-i18n="btnConfirm">확인</button>
     </div>
   </div>
 </div>
@@ -2722,16 +2737,16 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
   <div class="fb-box">
     <div class="fb-header">
       <span style="font-size:1.2rem;">💡</span>
-      <h3>개선 제안 / 기능 요청</h3>
+      <h3 data-i18n="fbTitle">개선 제안 / 기능 요청</h3>
       <button class="fb-close" onclick="closeFeedback()">✕</button>
     </div>
     <div class="fb-body">
       <div class="fb-row">
-        <label>이름 <span style="color:#c62828;font-size:0.75rem;">*</span></label>
+        <label><span data-i18n="fbName">이름</span> <span style="color:#c62828;font-size:0.75rem;">*</span></label>
         <input type="text" id="fb-name" placeholder="예: 홍길동">
       </div>
       <div class="fb-row">
-        <label>유형</label>
+        <label data-i18n="fbType">유형</label>
         <select id="fb-type">
           <option value="기능요청">🚀 기능 요청</option>
           <option value="버그신고">🐛 버그 신고</option>
@@ -2740,18 +2755,18 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
         </select>
       </div>
       <div class="fb-row">
-        <label>제목 <span style="color:#aaa;font-weight:400;">(선택)</span></label>
+        <label><span data-i18n="fbTitleLabel">제목</span> <span style="color:#aaa;font-weight:400;" data-i18n="fbOptional">(선택)</span></label>
         <input type="text" id="fb-title" placeholder="예: 특정 필터 추가 요청">
       </div>
       <div class="fb-row">
-        <label>내용 <span style="color:#c62828;font-size:0.75rem;">*</span></label>
+        <label><span data-i18n="fbContent">내용</span> <span style="color:#c62828;font-size:0.75rem;">*</span></label>
         <textarea id="fb-content" placeholder="어떤 점이 불편했거나, 어떤 기능이 있으면 좋을지 자유롭게 적어주세요 😊"></textarea>
       </div>
-      <p class="fb-note">📨 전송하면 구글 스프레드시트에 자동 저장됩니다.</p>
+      <p class="fb-note" data-i18n="fbNote">📨 전송하면 구글 스프레드시트에 자동 저장됩니다.</p>
     </div>
     <div class="fb-footer">
-      <button class="fb-cancel-btn" onclick="closeFeedback()">취소</button>
-      <button class="fb-send-btn" onclick="sendFeedback()">📨 제출하기</button>
+      <button class="fb-cancel-btn" onclick="closeFeedback()" data-i18n="btnCancel">취소</button>
+      <button class="fb-send-btn" onclick="sendFeedback()" data-i18n="fbSubmit">📨 제출하기</button>
     </div>
   </div>
 </div>
@@ -2760,7 +2775,7 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
 <div class="side-panel" id="panel-usage">
   <div class="side-panel-hdr">
     <span style="font-size:1.2rem;">📖</span>
-    <h2>사용법</h2>
+    <h2 data-i18n="btnGuide">사용법</h2>
     <button class="side-panel-close" onclick="closePanel()">← 닫기</button>
   </div>
   <div class="side-panel-body">
@@ -2885,8 +2900,16 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
     <button class="side-panel-close" onclick="closePanel()">← 닫기</button>
   </div>
   <div class="side-panel-body">
-    <div class="history-item">
+      <div class="history-item">
       <div class="history-date">2026.05.28</div>
+      <div class="history-content">
+        <span class="history-tag tag-ui">UI</span>🌐 다국어 지원 — 한국어·English·中文(简体)·日本語 4개 언어 전환<br>
+        <span class="history-tag tag-ui">UI</span>언어 선택 버튼 헤더에 추가 (🌐 KO 버튼)<br>
+        <span class="history-tag tag-feat">기능</span>선택 언어 브라우저 자동 저장 (localStorage)
+      </div>
+    </div>
+    <div class="history-item">
+      <div class="history-date">2026.05.25</div>
       <div class="history-content">
         <span class="history-tag tag-ui">UI</span>🎨 테마 시스템 — 라이트/다크 모드 + 5가지 포인트 컬러 (블루·그린·퍼플·틸·슬레이트)<br>
         <span class="history-tag tag-feat">기능</span>설정 자동 저장 — 컬럼 매핑·제외 옵션을 브라우저(PC별 독립)에 기억<br>
@@ -2981,7 +3004,7 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
 
 <!-- ── 테마 피커 ─────────────────────────────────────────── -->
 <div id="theme-picker" style="display:none;position:fixed;top:64px;right:14px;z-index:6000;background:white;border-radius:14px;box-shadow:0 8px 36px rgba(0,0,0,0.22);padding:18px 20px;width:236px;border:1px solid #e0e0e0;">
-  <div style="font-size:0.9rem;font-weight:700;color:#333;margin-bottom:15px;">🎨 테마 설정</div>
+  <div style="font-size:0.9rem;font-weight:700;color:#333;margin-bottom:15px;" data-i18n="themeTitle">🎨 테마 설정</div>
 
   <!-- 밝기 토글 -->
   <div style="margin-bottom:15px;">
@@ -3015,6 +3038,13 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
   <button onclick="closeThemePicker()" style="margin-top:14px;width:100%;padding:7px;border:1px solid #ddd;border-radius:8px;background:#f5f5f5;cursor:pointer;font-size:0.8rem;color:#666;font-weight:500;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='#f5f5f5'">✕ 닫기</button>
 </div>
 
+<div id="lang-picker" style="display:none;">
+  <div style="font-size:0.85rem;font-weight:700;color:#333;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #eee;">🌐 언어 / Language</div>
+  <button class="lp-btn lp-active" id="lp-ko" onclick="applyLang('ko');closeLangPicker();">🇰🇷 한국어</button>
+  <button class="lp-btn" id="lp-en" onclick="applyLang('en');closeLangPicker();">🇺🇸 English</button>
+  <button class="lp-btn" id="lp-zh" onclick="applyLang('zh');closeLangPicker();">🇨🇳 中文(简体)</button>
+  <button class="lp-btn" id="lp-ja" onclick="applyLang('ja');closeLangPicker();">🇯🇵 日本語</button>
+</div>
 
 
 <script>
@@ -3393,6 +3423,7 @@ function restoreColSettings(side) {
     cfgEl.addEventListener('input',  saveSettings);
   }
 })();
+// ※ loadLang / applyLang 은 STRINGS 선언 이후 스크립트 끝에서 실행됨
 
 function exportCmpExcel() {
   const wb = XLSX.utils.book_new();
@@ -3424,6 +3455,507 @@ function exportCmpExcel() {
   XLSX.writeFile(wb, `BOM버전비교_${stamp}.xlsx`);
 }
 // ══════════════════════════════════════════
+
+
+// ═══════════════════════════════════════════════════════════
+// 다국어 시스템 (한/영/중/일)
+// ═══════════════════════════════════════════════════════════
+const LANG_KEY = 'bom_tool_lang_v1';
+let currentLang = 'ko';
+
+const STRINGS = {
+ko: {
+  headerTitle:'🔍 BOM ↔ 아트웍 좌표 매칭 툴',
+  headerSub:'PCB BOM과 좌표 데이터를 비교하여 매칭 현황을 분석합니다',
+  btnGuide:'📖 사용법', btnPatchNotes:'🔒 패치 노트', btnTheme:'🎨 테마',
+  tabMatch:'🔍 좌표데이터·BOM 매칭', tabCompare:'📊 BOM 버전 비교',
+  btnSuggest:'💡 개선 제안',
+  bomFile:'BOM 파일', coordFile:'좌표 데이터 파일', notUploaded:'미업로드',
+  dropZoneText:'클릭하거나 파일을 끌어다 놓으세요', dropZoneSub:'.xlsx, .xls 지원',
+  sheetSelect:'📊 시트 선택',
+  cfgTitle:'⚙️ 매칭 설정',
+  cfgBomLoc:'BOM - Location 컬럼 (RefDes)', cfgBomName:'BOM - 품명 컬럼',
+  cfgBomSpec:'BOM - 규격 컬럼', cfgBomMaker:'BOM - Maker 컬럼',
+  cfgBomQty:'BOM - 단위수량 컬럼', cfgCoordRef:'좌표 - RefDes 컬럼',
+  cfgCoordDecal:'좌표 - PCB Decal 컬럼', cfgCoordLayer:'좌표 - Layer 컬럼',
+  cfgHeaderRow:'좌표 헤더 행 번호 (0부터 시작)',
+  exclCoordTitle:'🚫 좌표 데이터에서 제외할 항목',
+  exclTp:'테스트 포인트 (TP001, TP101…)', exclFid:'피듀셜 마크',
+  exclClamp:'고정홀류',
+  exclCustomLabel:'직접 입력:', exclCustomPh:'예: MP,H,MH (쉼표 구분)',
+  exclBomTitle:'🚫 BOM에서 제외할 항목 (품명 기준)',
+  exclBomLabel:'품명 키워드:', exclBomHint:'품명 컬럼 값에 포함된 경우 제외',
+  ncTitle:'🚫 NC (No Connect) 항목 지정',
+  ncPh:'예: C999, JP1, JP2\n쉼표 또는 줄바꿈으로 구분',
+  ncHint:'ㆍ BOM에 없는 좌표 항목 중 NC 처리할 RefDes 입력\nㆍ 결과 테이블의 체크박스로도 지정 가능\nㆍ NC 항목은 🚫 NC 상태로 별도 표시됨',
+  btnRunMatch:'🔗 매칭 실행', btnExcel:'📥 Excel 내보내기', btnReset:'🔄 초기화',
+  sTotal:'전체 RefDes (BOM)', sMatched:'매칭 성공 ✅', sMismatch:'규격 불일치 ⚡',
+  sBomOnly:'BOM에만 있음 ❌', sCoordOnly:'좌표에만 있음 ⚠️', sNc:'NC 항목 🚫', sCoverage:'매칭률',
+  fAll:'전체', fMatched:'✅ 매칭', fMismatch:'⚡ 규격불일치', fBomOnly:'❌ BOM만',
+  fCoordOnly:'⚠️ 좌표만', fNc:'🚫 NC', fDup:'⚠ BOM중복',
+  searchPh:'🔍 RefDes 검색...', btnSaveAll:'📥 전체 저장', btnSaveSel:'📤 선택 저장',
+  thStatus:'상태', thPartName:'품명 (BOM)', thSpec:'규격 (BOM)',
+  emptyState:'BOM 파일과 좌표 데이터 파일을 업로드한 후 매칭을 실행하세요',
+  previewTitle:'📋 변경 내용 미리보기', btnClose:'닫기', btnExcelDl:'📥 엑셀 다운로드',
+  pwPrompt:'비밀번호를 입력하세요', pwWrong:'❌ 비밀번호가 틀렸습니다',
+  btnCancel:'취소', btnConfirm:'확인',
+  fbTitle:'개선 제안 / 기능 요청', fbName:'이름', fbType:'유형',
+  fbTitleLabel:'제목', fbOptional:'(선택)', fbContent:'내용',
+  fbNamePh:'예: 홍길동', fbTitlePh:'예: 특정 필터 추가 요청',
+  fbContentPh:'어떤 점이 불편했거나, 어떤 기능이 있으면 좋을지 자유롭게 적어주세요 😊',
+  fbNote:'📨 전송하면 구글 스프레드시트에 자동 저장됩니다.',
+  fbSubmit:'📨 제출하기',
+  fbTypeOptions:[
+    {val:'기능요청',label:'🚀 기능 요청'},{val:'버그신고',label:'🐛 버그 신고'},
+    {val:'UI개선',label:'🎨 UI 개선'},{val:'기타',label:'💬 기타'}
+  ],
+  cmpOld:'📂 구버전 BOM', cmpNew:'📂 신버전 BOM',
+  cmpOldDrop:'구버전 BOM 엑셀 파일을 올려주세요', cmpNewDrop:'신버전 BOM 엑셀 파일을 올려주세요',
+  cmpLocLabel:'RefDes 열 이름 (기준 키)', cmpExclLabel:'비교 제외할 열',
+  cmpExclPh:'예: 단계, Maker (비워두면 모든 열 비교)',
+  cmpHint:'※ RefDes 기준으로 나머지 모든 열 자동 비교\n파일 업로드 후 열 목록이 자동 감지됩니다',
+  cmpDetected:'감지된 열:',
+  btnRunCmp:'🔍 버전 비교 실행',
+  cmpAdded:'➕ 추가된 부품', cmpDeleted:'➖ 삭제된 부품', cmpChanged:'🔄 변경된 부품',
+  cmpAddedSub:'(신버전에만 있음)', cmpDeletedSub:'(구버전에만 있음)', cmpChangedSub:'(규격·품명 변경)',
+  btnCmpExcel:'📥 비교 결과 엑셀 다운로드',
+  cmpThField:'변경 항목', cmpThOld:'구버전', cmpThNew:'신버전',
+  themeTitle:'🎨 테마 설정', themeBrightness:'밝기', themeLight:'☀️ 라이트', themeDark:'🌙 다크',
+  themeAccent:'포인트 컬러',
+  donutMatchRate:'매칭률',
+  legendMatched:'매칭', legendMismatch:'규격불일치', legendBomOnly:'BOM만',
+  legendCoordOnly:'좌표만', legendNc:'NC',
+  alertNoCol:'⚠️ BOM 규격 또는 Coord Decal 컬럼이 선택되지 않았습니다.\n설정을 확인해주세요.',
+  alertNoEndpoint:'⚠️ FEEDBACK_ENDPOINT가 설정되지 않았습니다',
+  toastFbOk:'✅ 피드백이 전송되었습니다! 감사합니다 😊',
+  toastFbFail:'❌ 전송 실패. 네트워크를 확인해주세요.',
+  alertNoCheck:'저장할 항목을 먼저 체크해주세요 ☑️',
+  alertNoExport:'내보낼 항목이 없습니다.',
+  statusLabels:{matched:'매칭',mismatch:'규격불일치','bom-only':'BOM만','coord-only':'좌표만',nc:'NC'},
+  filterNames:{all:'전체',matched:'매칭',mismatch:'규격불일치','bom-only':'BOM만','coord-only':'좌표만',nc:'NC',dup:'BOM중복'},
+  excelCols:{'상태':'상태','품명(BOM)':'품명(BOM)','규격(BOM)':'규격(BOM)'},
+  fabEdit:'✏️ 수정 페이지', usageTitle:'사용법',
+  editTitle:'수정 및 내보내기', editBack:'← 돌아가기',
+  esTotal:'전체', esMatch:'매칭', esMis:'불일치', esBom:'BOM만', esCoord:'좌표만', esDup:'중복',
+  editSecItems:'🔧 항목 처리',
+  editDelBom:'BOM only 항목 삭제', editDelBomDesc:'좌표에 없는 부품을 출력에서 제외',
+  editAddCoord:'좌표 only 항목 BOM 추가', editAddCoordDesc:'BOM에 없는 좌표 항목을 추가',
+  editDelDup:'BOM 중복 항목 제거', editDelDupDesc:'중복 RefDes 중 마지막 행만 유지',
+  editInline:'웹에서 직접 셀 수정', editInlineDesc:'품명·규격 셀 클릭 후 바로 수정 가능',
+  editSecExcel:'📊 엑셀 출력 옵션',
+  editMismatchSheet:'불일치 리포트 시트', editMismatchSheetDesc:'RefDes / BOM값 / 좌표값 비교',
+  editBeforeAfter:'수정 전/후 시트 분리', editBeforeAfterDesc:'원본 + 수정본 시트 따로 출력',
+  editChangeLog:'변경 이력 로그 시트', editChangeLogDesc:'삭제·추가·수정 내역 기록',
+  editExclSheet:'제외 항목 별도 시트', editExclSheetDesc:'FIDUCIAL, HOLE 제외 항목 포함',
+  editAccSheet:'부속품(FOR...) 별도 시트', editAccSheetDesc:'FOR 패턴 항목을 시트로 분리',
+  editPreview:'🔍 미리보기', editExcelDl:'📥 엑셀 다운로드',
+},
+
+en: {
+  headerTitle:'🔍 BOM ↔ Artwork Coord Matching Tool',
+  headerSub:'Compare PCB BOM and coordinate data to analyze matching status',
+  btnGuide:'📖 Guide', btnPatchNotes:'🔒 Patch Notes', btnTheme:'🎨 Theme',
+  tabMatch:'🔍 Coord·BOM Matching', tabCompare:'📊 BOM Version Compare',
+  btnSuggest:'💡 Suggest',
+  bomFile:'BOM File', coordFile:'Coordinate Data File', notUploaded:'Not Uploaded',
+  dropZoneText:'Click or drag & drop file here', dropZoneSub:'.xlsx, .xls supported',
+  sheetSelect:'📊 Select Sheet',
+  cfgTitle:'⚙️ Match Settings',
+  cfgBomLoc:'BOM - Location Column (RefDes)', cfgBomName:'BOM - Part Name Column',
+  cfgBomSpec:'BOM - Spec Column', cfgBomMaker:'BOM - Maker Column',
+  cfgBomQty:'BOM - Unit Qty Column', cfgCoordRef:'Coord - RefDes Column',
+  cfgCoordDecal:'Coord - PCB Decal Column', cfgCoordLayer:'Coord - Layer Column',
+  cfgHeaderRow:'Coord Header Row (0-based)',
+  exclCoordTitle:'🚫 Items to Exclude from Coord Data',
+  exclTp:'Test Points (TP001, TP101…)', exclFid:'Fiducial Marks',
+  exclClamp:'Mounting Holes',
+  exclCustomLabel:'Custom:', exclCustomPh:'e.g.: MP,H,MH (comma separated)',
+  exclBomTitle:'🚫 BOM Items to Exclude (by part name)',
+  exclBomLabel:'Part Name Keywords:', exclBomHint:'Excluded if part name column contains keyword',
+  ncTitle:'🚫 NC (No Connect) Item Designation',
+  ncPh:'e.g.: C999, JP1, JP2\nSeparate by comma or newline',
+  ncHint:'· Enter RefDes to mark as NC among coord-only items\n· Can also toggle via table checkbox\n· NC items shown with 🚫 NC status',
+  btnRunMatch:'🔗 Run Match', btnExcel:'📥 Export Excel', btnReset:'🔄 Reset',
+  sTotal:'Total RefDes (BOM)', sMatched:'Matched ✅', sMismatch:'Spec Mismatch ⚡',
+  sBomOnly:'BOM Only ❌', sCoordOnly:'Coord Only ⚠️', sNc:'NC Items 🚫', sCoverage:'Match Rate',
+  fAll:'All', fMatched:'✅ Matched', fMismatch:'⚡ Mismatch', fBomOnly:'❌ BOM Only',
+  fCoordOnly:'⚠️ Coord Only', fNc:'🚫 NC', fDup:'⚠ BOM Dup',
+  searchPh:'🔍 Search RefDes...', btnSaveAll:'📥 Save All', btnSaveSel:'📤 Save Selected',
+  thStatus:'Status', thPartName:'Part Name (BOM)', thSpec:'Spec (BOM)',
+  emptyState:'Upload BOM file and Coordinate data file, then run matching',
+  previewTitle:'📋 Change Preview', btnClose:'Close', btnExcelDl:'📥 Download Excel',
+  pwPrompt:'Enter password', pwWrong:'❌ Wrong password',
+  btnCancel:'Cancel', btnConfirm:'OK',
+  fbTitle:'Improvement / Feature Request', fbName:'Name', fbType:'Type',
+  fbTitleLabel:'Title', fbOptional:'(optional)', fbContent:'Content',
+  fbNamePh:'e.g.: John', fbTitlePh:'e.g.: Add specific filter',
+  fbContentPh:"Describe what was inconvenient or what feature would help 😊",
+  fbNote:'📨 Auto-saved to Google Spreadsheet upon submission.',
+  fbSubmit:'📨 Submit',
+  fbTypeOptions:[
+    {val:'기능요청',label:'🚀 Feature Request'},{val:'버그신고',label:'🐛 Bug Report'},
+    {val:'UI개선',label:'🎨 UI Improvement'},{val:'기타',label:'💬 Other'}
+  ],
+  cmpOld:'📂 Old BOM', cmpNew:'📂 New BOM',
+  cmpOldDrop:'Drop old BOM Excel file here', cmpNewDrop:'Drop new BOM Excel file here',
+  cmpLocLabel:'RefDes Column Name (key)', cmpExclLabel:'Columns to Exclude',
+  cmpExclPh:'e.g.: Step, Maker (leave blank to compare all)',
+  cmpHint:'※ All other columns compared by RefDes\nColumn list auto-detected after upload',
+  cmpDetected:'Detected columns:',
+  btnRunCmp:'🔍 Run Version Compare',
+  cmpAdded:'➕ Added Parts', cmpDeleted:'➖ Removed Parts', cmpChanged:'🔄 Changed Parts',
+  cmpAddedSub:'(new version only)', cmpDeletedSub:'(old version only)', cmpChangedSub:'(spec/name changed)',
+  btnCmpExcel:'📥 Download Compare Excel',
+  cmpThField:'Changed Field', cmpThOld:'Old Version', cmpThNew:'New Version',
+  themeTitle:'🎨 Theme Settings', themeBrightness:'Brightness', themeLight:'☀️ Light', themeDark:'🌙 Dark',
+  themeAccent:'Accent Color',
+  donutMatchRate:'Match Rate',
+  legendMatched:'Matched', legendMismatch:'Mismatch', legendBomOnly:'BOM Only',
+  legendCoordOnly:'Coord Only', legendNc:'NC',
+  alertNoCol:'⚠️ BOM Spec or Coord Decal column not selected.\nPlease check settings.',
+  alertNoEndpoint:'⚠️ FEEDBACK_ENDPOINT is not configured',
+  toastFbOk:'✅ Feedback sent! Thank you 😊',
+  toastFbFail:'❌ Send failed. Please check network.',
+  alertNoCheck:'Please check items to save first ☑️',
+  alertNoExport:'No items to export.',
+  statusLabels:{matched:'Matched',mismatch:'Mismatch','bom-only':'BOM Only','coord-only':'Coord Only',nc:'NC'},
+  filterNames:{all:'All',matched:'Matched',mismatch:'Mismatch','bom-only':'BOM Only','coord-only':'Coord Only',nc:'NC',dup:'BOM Dup'},
+  excelCols:{'상태':'Status','품명(BOM)':'Part Name(BOM)','규격(BOM)':'Spec(BOM)'},
+  fabEdit:'✏️ Edit Page', usageTitle:'Guide',
+  editTitle:'Edit & Export', editBack:'← Back',
+  esTotal:'Total', esMatch:'Matched', esMis:'Mismatch', esBom:'BOM Only', esCoord:'Coord Only', esDup:'Dup',
+  editSecItems:'🔧 Item Processing',
+  editDelBom:'Delete BOM-only items', editDelBomDesc:'Exclude parts not in coordinates from output',
+  editAddCoord:'Add coord-only items to BOM', editAddCoordDesc:'Add coordinate items missing from BOM',
+  editDelDup:'Remove BOM duplicate items', editDelDupDesc:'Keep only the last row of duplicate RefDes',
+  editInline:'Direct cell editing on web', editInlineDesc:'Click part name/spec cell to edit directly',
+  editSecExcel:'📊 Excel Output Options',
+  editMismatchSheet:'Mismatch report sheet', editMismatchSheetDesc:'RefDes / BOM value / Coord value comparison',
+  editBeforeAfter:'Before/After sheet split', editBeforeAfterDesc:'Output original + modified sheets separately',
+  editChangeLog:'Change history log sheet', editChangeLogDesc:'Record deletions, additions, modifications',
+  editExclSheet:'Excluded items separate sheet', editExclSheetDesc:'Include FIDUCIAL, HOLE excluded items',
+  editAccSheet:'Accessories (FOR...) separate sheet', editAccSheetDesc:'Split FOR pattern items to sheet',
+  editPreview:'🔍 Preview', editExcelDl:'📥 Download Excel',
+},
+
+zh: {
+  headerTitle:'🔍 BOM ↔ 贴片坐标匹配工具',
+  headerSub:'对比PCB BOM与坐标数据，分析匹配状态',
+  btnGuide:'📖 使用说明', btnPatchNotes:'🔒 更新日志', btnTheme:'🎨 主题',
+  tabMatch:'🔍 坐标·BOM匹配', tabCompare:'📊 BOM版本对比',
+  btnSuggest:'💡 改进建议',
+  bomFile:'BOM文件', coordFile:'坐标数据文件', notUploaded:'未上传',
+  dropZoneText:'点击或拖放文件至此', dropZoneSub:'.xlsx, .xls 支持',
+  sheetSelect:'📊 选择工作表',
+  cfgTitle:'⚙️ 匹配设置',
+  cfgBomLoc:'BOM - 位号列 (RefDes)', cfgBomName:'BOM - 品名列',
+  cfgBomSpec:'BOM - 规格列', cfgBomMaker:'BOM - Maker列',
+  cfgBomQty:'BOM - 数量列', cfgCoordRef:'坐标 - RefDes列',
+  cfgCoordDecal:'坐标 - PCB封装列', cfgCoordLayer:'坐标 - 层列',
+  cfgHeaderRow:'坐标标题行号（从0开始）',
+  exclCoordTitle:'🚫 从坐标数据中排除的项目',
+  exclTp:'测试点 (TP001, TP101…)', exclFid:'基准点',
+  exclClamp:'固定孔类',
+  exclCustomLabel:'自定义：', exclCustomPh:'例：MP,H,MH（逗号分隔）',
+  exclBomTitle:'🚫 BOM中排除的项目（按品名）',
+  exclBomLabel:'品名关键词：', exclBomHint:'品名列值包含关键词时排除',
+  ncTitle:'🚫 NC（No Connect）项目指定',
+  ncPh:'例：C999, JP1, JP2\n逗号或换行分隔',
+  ncHint:'· 输入仅坐标中存在的NC RefDes\n· 也可通过表格复选框切换\n· NC项目以🚫 NC状态单独显示',
+  btnRunMatch:'🔗 执行匹配', btnExcel:'📥 导出Excel', btnReset:'🔄 重置',
+  sTotal:'全部RefDes (BOM)', sMatched:'匹配成功 ✅', sMismatch:'规格不符 ⚡',
+  sBomOnly:'仅BOM ❌', sCoordOnly:'仅坐标 ⚠️', sNc:'NC项目 🚫', sCoverage:'匹配率',
+  fAll:'全部', fMatched:'✅ 匹配', fMismatch:'⚡ 规格不符', fBomOnly:'❌ 仅BOM',
+  fCoordOnly:'⚠️ 仅坐标', fNc:'🚫 NC', fDup:'⚠ BOM重复',
+  searchPh:'🔍 搜索RefDes...', btnSaveAll:'📥 全部保存', btnSaveSel:'📤 选择保存',
+  thStatus:'状态', thPartName:'品名(BOM)', thSpec:'规格(BOM)',
+  emptyState:'上传BOM文件和坐标数据文件后执行匹配',
+  previewTitle:'📋 变更预览', btnClose:'关闭', btnExcelDl:'📥 下载Excel',
+  pwPrompt:'请输入密码', pwWrong:'❌ 密码错误',
+  btnCancel:'取消', btnConfirm:'确认',
+  fbTitle:'改进建议 / 功能请求', fbName:'姓名', fbType:'类型',
+  fbTitleLabel:'标题', fbOptional:'（选填）', fbContent:'内容',
+  fbNamePh:'例：张三', fbTitlePh:'例：添加特定过滤器',
+  fbContentPh:'请自由描述不便之处或希望添加的功能 😊',
+  fbNote:'📨 提交后将自动保存到Google表格。',
+  fbSubmit:'📨 提交',
+  fbTypeOptions:[
+    {val:'기능요청',label:'🚀 功能请求'},{val:'버그신고',label:'🐛 Bug报告'},
+    {val:'UI개선',label:'🎨 UI改进'},{val:'기타',label:'💬 其他'}
+  ],
+  cmpOld:'📂 旧版BOM', cmpNew:'📂 新版BOM',
+  cmpOldDrop:'请上传旧版BOM Excel文件', cmpNewDrop:'请上传新版BOM Excel文件',
+  cmpLocLabel:'RefDes列名（键）', cmpExclLabel:'排除比较的列',
+  cmpExclPh:'例：阶段, Maker（留空则比较所有列）',
+  cmpHint:'※ 以RefDes为基准自动比较其余所有列\n上传文件后自动检测列列表',
+  cmpDetected:'检测到的列：',
+  btnRunCmp:'🔍 执行版本对比',
+  cmpAdded:'➕ 新增元件', cmpDeleted:'➖ 删除元件', cmpChanged:'🔄 变更元件',
+  cmpAddedSub:'（仅新版本）', cmpDeletedSub:'（仅旧版本）', cmpChangedSub:'（规格/品名变更）',
+  btnCmpExcel:'📥 下载对比结果Excel',
+  cmpThField:'变更项目', cmpThOld:'旧版本', cmpThNew:'新版本',
+  themeTitle:'🎨 主题设置', themeBrightness:'亮度', themeLight:'☀️ 浅色', themeDark:'🌙 深色',
+  themeAccent:'主色调',
+  donutMatchRate:'匹配率',
+  legendMatched:'匹配', legendMismatch:'规格不符', legendBomOnly:'仅BOM',
+  legendCoordOnly:'仅坐标', legendNc:'NC',
+  alertNoCol:'⚠️ BOM规格或坐标封装列未选择。\n请检查设置。',
+  alertNoEndpoint:'⚠️ FEEDBACK_ENDPOINT未设置',
+  toastFbOk:'✅ 反馈已发送！感谢您 😊',
+  toastFbFail:'❌ 发送失败。请检查网络。',
+  alertNoCheck:'请先勾选要保存的项目 ☑️',
+  alertNoExport:'没有可导出的项目。',
+  statusLabels:{matched:'匹配',mismatch:'规格不符','bom-only':'仅BOM','coord-only':'仅坐标',nc:'NC'},
+  filterNames:{all:'全部',matched:'匹配',mismatch:'规格不符','bom-only':'仅BOM','coord-only':'仅坐标',nc:'NC',dup:'BOM重复'},
+  excelCols:{'상태':'状态','품명(BOM)':'品名(BOM)','규격(BOM)':'规格(BOM)'},
+  fabEdit:'✏️ 编辑页面', usageTitle:'使用说明',
+  editTitle:'编辑与导出', editBack:'← 返回',
+  esTotal:'全部', esMatch:'匹配', esMis:'不一致', esBom:'仅BOM', esCoord:'仅坐标', esDup:'重复',
+  editSecItems:'🔧 项目处理',
+  editDelBom:'删除仅BOM项目', editDelBomDesc:'将坐标中不存在的元件从输出中排除',
+  editAddCoord:'将仅坐标项目添加到BOM', editAddCoordDesc:'添加BOM中缺少的坐标项目',
+  editDelDup:'删除BOM重复项目', editDelDupDesc:'重复RefDes中仅保留最后一行',
+  editInline:'直接在网页编辑单元格', editInlineDesc:'点击品名/规格单元格可直接编辑',
+  editSecExcel:'📊 Excel输出选项',
+  editMismatchSheet:'不一致报告工作表', editMismatchSheetDesc:'RefDes / BOM值 / 坐标值比较',
+  editBeforeAfter:'修改前/后工作表分离', editBeforeAfterDesc:'原本+修改版工作表分别输出',
+  editChangeLog:'变更历史日志工作表', editChangeLogDesc:'记录删除·添加·修改内容',
+  editExclSheet:'排除项目单独工作表', editExclSheetDesc:'包含FIDUCIAL, HOLE排除项目',
+  editAccSheet:'配件(FOR...)单独工作表', editAccSheetDesc:'将FOR模式项目分离到工作表',
+  editPreview:'🔍 预览', editExcelDl:'📥 下载Excel',
+},
+
+ja: {
+  headerTitle:'🔍 BOM ↔ アートワーク座標マッチングツール',
+  headerSub:'PCB BOMと座標データを比較し、マッチング状況を分析します',
+  btnGuide:'📖 使い方', btnPatchNotes:'🔒 更新履歴', btnTheme:'🎨 テーマ',
+  tabMatch:'🔍 座標・BOMマッチング', tabCompare:'📊 BOMバージョン比較',
+  btnSuggest:'💡 改善提案',
+  bomFile:'BOMファイル', coordFile:'座標データファイル', notUploaded:'未アップロード',
+  dropZoneText:'クリックまたはファイルをドロップ', dropZoneSub:'.xlsx, .xls 対応',
+  sheetSelect:'📊 シート選択',
+  cfgTitle:'⚙️ マッチング設定',
+  cfgBomLoc:'BOM - Location列 (RefDes)', cfgBomName:'BOM - 品名列',
+  cfgBomSpec:'BOM - 規格列', cfgBomMaker:'BOM - Maker列',
+  cfgBomQty:'BOM - 数量列', cfgCoordRef:'座標 - RefDes列',
+  cfgCoordDecal:'座標 - PCB Decal列', cfgCoordLayer:'座標 - Layer列',
+  cfgHeaderRow:'座標ヘッダー行番号（0から）',
+  exclCoordTitle:'🚫 座標データから除外する項目',
+  exclTp:'テストポイント (TP001, TP101…)', exclFid:'フィデューシャルマーク',
+  exclClamp:'固定穴類',
+  exclCustomLabel:'カスタム：', exclCustomPh:'例：MP,H,MH（カンマ区切り）',
+  exclBomTitle:'🚫 BOMから除外する項目（品名基準）',
+  exclBomLabel:'品名キーワード：', exclBomHint:'品名列の値にキーワードが含まれる場合除外',
+  ncTitle:'🚫 NC（No Connect）項目指定',
+  ncPh:'例：C999, JP1, JP2\nカンマまたは改行で区切り',
+  ncHint:'· 座標のみの項目でNC扱いにするRefDesを入力\n· テーブルのチェックボックスでも切替可能\n· NC項目は🚫 NCステータスで別途表示',
+  btnRunMatch:'🔗 マッチング実行', btnExcel:'📥 Excel出力', btnReset:'🔄 リセット',
+  sTotal:'全RefDes (BOM)', sMatched:'マッチング成功 ✅', sMismatch:'規格不一致 ⚡',
+  sBomOnly:'BOMのみ ❌', sCoordOnly:'座標のみ ⚠️', sNc:'NC項目 🚫', sCoverage:'マッチング率',
+  fAll:'全件', fMatched:'✅ 一致', fMismatch:'⚡ 規格不一致', fBomOnly:'❌ BOMのみ',
+  fCoordOnly:'⚠️ 座標のみ', fNc:'🚫 NC', fDup:'⚠ BOM重複',
+  searchPh:'🔍 RefDes検索...', btnSaveAll:'📥 全件保存', btnSaveSel:'📤 選択保存',
+  thStatus:'ステータス', thPartName:'品名(BOM)', thSpec:'規格(BOM)',
+  emptyState:'BOMファイルと座標データをアップロードしてマッチングを実行してください',
+  previewTitle:'📋 変更内容プレビュー', btnClose:'閉じる', btnExcelDl:'📥 Excelダウンロード',
+  pwPrompt:'パスワードを入力してください', pwWrong:'❌ パスワードが違います',
+  btnCancel:'キャンセル', btnConfirm:'確認',
+  fbTitle:'改善提案 / 機能要求', fbName:'お名前', fbType:'種別',
+  fbTitleLabel:'タイトル', fbOptional:'（任意）', fbContent:'内容',
+  fbNamePh:'例：山田太郎', fbTitlePh:'例：特定フィルター追加要求',
+  fbContentPh:'不便な点や追加してほしい機能を自由にお書きください 😊',
+  fbNote:'📨 送信するとGoogle スプレッドシートに自動保存されます。',
+  fbSubmit:'📨 送信',
+  fbTypeOptions:[
+    {val:'기능요청',label:'🚀 機能要求'},{val:'버그신고',label:'🐛 バグ報告'},
+    {val:'UI개선',label:'🎨 UI改善'},{val:'기타',label:'💬 その他'}
+  ],
+  cmpOld:'📂 旧バージョンBOM', cmpNew:'📂 新バージョンBOM',
+  cmpOldDrop:'旧バージョンBOM Excelをドロップ', cmpNewDrop:'新バージョンBOM Excelをドロップ',
+  cmpLocLabel:'RefDes列名（キー）', cmpExclLabel:'比較除外列',
+  cmpExclPh:'例：ステップ, Maker（空白で全列比較）',
+  cmpHint:'※ RefDesを基準に残りの全列を自動比較\nアップロード後に列リストが自動検出されます',
+  cmpDetected:'検出された列：',
+  btnRunCmp:'🔍 バージョン比較実行',
+  cmpAdded:'➕ 追加部品', cmpDeleted:'➖ 削除部品', cmpChanged:'🔄 変更部品',
+  cmpAddedSub:'（新バージョンのみ）', cmpDeletedSub:'（旧バージョンのみ）', cmpChangedSub:'（規格・品名変更）',
+  btnCmpExcel:'📥 比較結果Excelダウンロード',
+  cmpThField:'変更項目', cmpThOld:'旧バージョン', cmpThNew:'新バージョン',
+  themeTitle:'🎨 テーマ設定', themeBrightness:'明るさ', themeLight:'☀️ ライト', themeDark:'🌙 ダーク',
+  themeAccent:'アクセントカラー',
+  donutMatchRate:'マッチング率',
+  legendMatched:'一致', legendMismatch:'規格不一致', legendBomOnly:'BOMのみ',
+  legendCoordOnly:'座標のみ', legendNc:'NC',
+  alertNoCol:'⚠️ BOM規格またはCoord Decal列が選択されていません。\n設定を確認してください。',
+  alertNoEndpoint:'⚠️ FEEDBACK_ENDPOINTが設定されていません',
+  toastFbOk:'✅ フィードバックを送信しました！ありがとうございます 😊',
+  toastFbFail:'❌ 送信失敗。ネットワークを確認してください。',
+  alertNoCheck:'保存する項目をチェックしてください ☑️',
+  alertNoExport:'出力する項目がありません。',
+  statusLabels:{matched:'一致',mismatch:'規格不一致','bom-only':'BOMのみ','coord-only':'座標のみ',nc:'NC'},
+  filterNames:{all:'全件',matched:'一致',mismatch:'規格不一致','bom-only':'BOMのみ','coord-only':'座標のみ',nc:'NC',dup:'BOM重複'},
+  excelCols:{'상태':'ステータス','품명(BOM)':'品名(BOM)','규격(BOM)':'規格(BOM)'},
+  fabEdit:'✏️ 編集ページ', usageTitle:'使い方',
+  editTitle:'編集とエクスポート', editBack:'← 戻る',
+  esTotal:'全件', esMatch:'一致', esMis:'不一致', esBom:'BOMのみ', esCoord:'座標のみ', esDup:'重複',
+  editSecItems:'🔧 項目処理',
+  editDelBom:'BOMのみ項目を削除', editDelBomDesc:'座標にない部品を出力から除外',
+  editAddCoord:'座標のみ項目をBOMに追加', editAddCoordDesc:'BOMにない座標項目を追加',
+  editDelDup:'BOM重複項目を削除', editDelDupDesc:'重複RefDesの最終行のみ保持',
+  editInline:'Web上で直接セル編集', editInlineDesc:'品名・規格セルをクリックして直接編集可能',
+  editSecExcel:'📊 Excel出力オプション',
+  editMismatchSheet:'不一致レポートシート', editMismatchSheetDesc:'RefDes / BOM値 / 座標値比較',
+  editBeforeAfter:'修正前後シート分離', editBeforeAfterDesc:'元本+修正版シートを別々に出力',
+  editChangeLog:'変更履歴ログシート', editChangeLogDesc:'削除・追加・修正内容を記録',
+  editExclSheet:'除外項目別シート', editExclSheetDesc:'FIDUCIAL, HOLE除外項目を含む',
+  editAccSheet:'付属品(FOR...)別シート', editAccSheetDesc:'FORパターン項目をシートに分離',
+  editPreview:'🔍 プレビュー', editExcelDl:'📥 Excelダウンロード',
+},
+};
+
+function t(key) {
+  const s = STRINGS[currentLang] || STRINGS.ko;
+  return s[key] !== undefined ? s[key] : (STRINGS.ko[key] || key);
+}
+
+function saveLang() {
+  try { localStorage.setItem(LANG_KEY, currentLang); } catch(e) {}
+}
+
+function loadLang() {
+  try {
+    const saved = localStorage.getItem(LANG_KEY);
+    if (saved && STRINGS[saved]) currentLang = saved;
+  } catch(e) {}
+}
+
+function applyLang(lang) {
+  if (!STRINGS[lang]) return;
+  currentLang = lang;
+  saveLang();
+  const s = STRINGS[lang];
+
+  // data-i18n 속성 일괄 적용
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (s[key] !== undefined) el.textContent = s[key];
+  });
+
+  // placeholder 업데이트
+  const searchEl = document.getElementById('search-input');
+  if (searchEl) searchEl.placeholder = s.searchPh;
+  const ncEl = document.getElementById('nc-refdes-input');
+  if (ncEl) ncEl.placeholder = s.ncPh;
+  const fbNameEl = document.getElementById('fb-name');
+  if (fbNameEl) fbNameEl.placeholder = s.fbNamePh;
+  const fbTitleEl = document.getElementById('fb-title');
+  if (fbTitleEl) fbTitleEl.placeholder = s.fbTitlePh;
+  const fbContentEl = document.getElementById('fb-content');
+  if (fbContentEl) fbContentEl.placeholder = s.fbContentPh;
+
+  // 필터바 저장 버튼들
+  document.querySelectorAll('.btn-export-filter').forEach((btn, i) => {
+    if (i === 0) btn.innerHTML = s.btnSaveAll;
+    if (i === 1) {
+      const badge = document.getElementById('sel-count-badge');
+      const bnum = badge ? badge.outerHTML : '';
+      btn.innerHTML = s.btnSaveSel + ' ' + bnum;
+    }
+  });
+
+  // 피드백 select 옵션
+  const fbType = document.getElementById('fb-type');
+  if (fbType && s.fbTypeOptions) {
+    const curVal = fbType.value;
+    fbType.innerHTML = s.fbTypeOptions.map(o => `<option value="${o.val}">${o.label}</option>`).join('');
+    fbType.value = curVal;
+  }
+
+  // 피드백 모달 헤더 span 텍스트
+  const fbHeader = document.querySelector('.fb-header h3');
+  if (fbHeader) fbHeader.textContent = s.fbTitle;
+
+  // 테마 피커 라벨들
+  const tpBright = document.querySelector('#theme-picker div div:first-of-type');
+  // 테마 피커 내 텍스트는 복잡하므로 skip (테마피커는 open 시 updateThemePickerUI에서 처리)
+
+  // BOM 비교 페이지 특정 요소들
+  const cmpOldH3 = document.querySelector('#cmp-old-card h3');
+  if (cmpOldH3) {
+    const badge = document.getElementById('cmp-old-badge');
+    cmpOldH3.innerHTML = `<span>📂</span> ${s.cmpOld.replace('📂 ','')} ${badge ? badge.outerHTML : ''}`;
+  }
+  const cmpNewH3 = document.querySelector('#cmp-new-card h3');
+  if (cmpNewH3) {
+    const badge = document.getElementById('cmp-new-badge');
+    cmpNewH3.innerHTML = `<span>📂</span> ${s.cmpNew.replace('📂 ','')} ${badge ? badge.outerHTML : ''}`;
+  }
+  const cmpOldP = document.querySelector('#cmp-old-drop > p');
+  if (cmpOldP) cmpOldP.textContent = s.cmpOldDrop;
+  const cmpNewP = document.querySelector('#cmp-new-drop > p');
+  if (cmpNewP) cmpNewP.textContent = s.cmpNewDrop;
+  const btnRunCmp = document.getElementById('btn-run-cmp');
+  if (btnRunCmp) btnRunCmp.textContent = s.btnRunCmp;
+  const btnCmpExcel = document.getElementById('btn-cmp-excel');
+  if (btnCmpExcel) btnCmpExcel.textContent = s.btnCmpExcel;
+  // compare sections headings
+  const cmpSecs = document.querySelectorAll('.cmp-section-hdr h3');
+  if (cmpSecs[0]) cmpSecs[0].innerHTML = `${s.cmpAdded} <small style="color:#888;font-weight:400;">${s.cmpAddedSub}</small>`;
+  if (cmpSecs[1]) cmpSecs[1].innerHTML = `${s.cmpDeleted} <small style="color:#888;font-weight:400;">${s.cmpDeletedSub}</small>`;
+  if (cmpSecs[2]) cmpSecs[2].innerHTML = `${s.cmpChanged} <small style="color:#888;font-weight:400;">${s.cmpChangedSub}</small>`;
+  // changed table headers
+  const chgThead = document.querySelector('#tbl-changed thead tr');
+  if (chgThead) chgThead.innerHTML = `<th>RefDes</th><th>${s.cmpThField}</th><th>${s.cmpThOld}</th><th>→</th><th>${s.cmpThNew}</th>`;
+
+  // 도넛 차트 범례 재렌더 (데이터 있을 때)
+  if (allRows && allRows.length > 0) {
+    const legend = document.getElementById('donut-legend');
+    if (legend) {
+      const existing = legend.querySelectorAll('.legend-label');
+      if (existing.length) {
+        const labels = [s.legendMatched, s.legendMismatch, s.legendBomOnly, s.legendCoordOnly, s.legendNc];
+        existing.forEach((el, i) => { if (labels[i]) el.textContent = labels[i]; });
+      }
+    }
+    // 도넛 SVG 중앙 텍스트
+    const svgTexts = document.querySelectorAll('#donut-svg text');
+    if (svgTexts.length >= 2) svgTexts[1].textContent = s.donutMatchRate;
+  }
+
+  // 언어 피커 버튼 active 상태 업데이트
+  ['ko','en','zh','ja'].forEach(l => {
+    const b = document.getElementById('lp-' + l);
+    if (b) b.classList.toggle('lp-active', l === lang);
+  });
+
+  // 헤더 언어 버튼 라벨
+  const lb = document.getElementById('lang-toggle-btn');
+  if (lb) lb.textContent = '🌐 ' + lang.toUpperCase();
+}
+
+function openLangPicker(e) {
+  if (e) e.stopPropagation();
+  const picker = document.getElementById('lang-picker');
+  if (!picker) return;
+  picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
+}
+
+function closeLangPicker() {
+  const p = document.getElementById('lang-picker');
+  if (p) p.style.display = 'none';
+}
+
+// 피커 외부 클릭 시 닫기 (lang)
+document.addEventListener('click', function(e) {
+  const picker = document.getElementById('lang-picker');
+  const btn = document.getElementById('lang-toggle-btn');
+  if (!picker || picker.style.display === 'none') return;
+  if (!picker.contains(e.target) && (!btn || !btn.contains(e.target))) closeLangPicker();
+});
+
+// ── 언어 시스템 초기화 (STRINGS 선언 후 실행) ──
+loadLang();
+applyLang(currentLang);
 
 </script>
 
