@@ -602,7 +602,7 @@
 #cmp-results { display: none; }
 
 /* ═══════════════════════════════════════════════════════════
-   THEME SYSTEM  (v2026.05.28)
+   THEME SYSTEM  (v2026.06.11)
    — Accent colors (blue/green/purple/teal/slate)
    — Dark mode
    ═══════════════════════════════════════════════════════════ */
@@ -793,6 +793,76 @@
 [data-theme="dark"] .lp-btn:hover { background:#252840; }
 [data-theme="dark"] .lp-btn.lp-active { background:#252840;border-color:#7986cb;color:#9fa8da; }
 
+/* ── 도움말 챗봇 ── */
+#chat-fab {
+  position:fixed;bottom:28px;left:28px;z-index:1998;
+  background:linear-gradient(135deg,#00838f,#006064);
+  color:white;border:none;border-radius:50px;
+  padding:13px 20px;font-size:0.88rem;font-weight:700;
+  cursor:pointer;box-shadow:0 4px 18px rgba(0,131,143,0.45);
+  display:flex;align-items:center;gap:8px;
+  transition:transform 0.18s,box-shadow 0.18s;white-space:nowrap;
+}
+#chat-fab:hover { transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,131,143,0.55); }
+#chat-panel {
+  position:fixed;bottom:90px;left:28px;z-index:5000;
+  width:340px;height:480px;
+  background:white;border-radius:18px;
+  box-shadow:0 8px 40px rgba(0,0,0,0.22);
+  display:none;flex-direction:column;overflow:hidden;
+  border:1px solid #e0e0e0;
+}
+#chat-panel.open { display:flex; }
+.chat-hdr {
+  background:linear-gradient(135deg,#006064,#00838f);
+  color:white;padding:14px 18px;
+  display:flex;align-items:center;gap:10px;flex-shrink:0;
+}
+.chat-hdr-title { flex:1;font-size:0.92rem;font-weight:700; }
+.chat-hdr-close {
+  background:rgba(255,255,255,0.15);border:none;color:white;
+  border-radius:6px;padding:4px 10px;cursor:pointer;font-size:0.82rem;
+}
+.chat-hdr-close:hover { background:rgba(255,255,255,0.28); }
+.chat-msgs {
+  flex:1;overflow-y:auto;padding:14px 14px 6px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.chat-msg {
+  max-width:88%;padding:9px 13px;border-radius:14px;
+  font-size:0.83rem;line-height:1.6;word-break:break-word;
+}
+.chat-msg.bot { background:#f4f6fb;color:#333;border-bottom-left-radius:4px;align-self:flex-start; }
+.chat-msg.user { background:linear-gradient(135deg,#006064,#00838f);color:white;border-bottom-right-radius:4px;align-self:flex-end; }
+.chat-chips-wrap { padding:6px 14px;display:flex;flex-wrap:wrap;gap:6px;flex-shrink:0; }
+.chat-chip {
+  padding:5px 12px;border:1.5px solid #00838f;border-radius:16px;
+  font-size:0.76rem;color:#006064;background:white;
+  cursor:pointer;transition:all 0.15s;white-space:nowrap;
+}
+.chat-chip:hover { background:#e0f7fa; }
+.chat-input-row {
+  padding:10px 14px;border-top:1px solid #eee;
+  display:flex;gap:8px;flex-shrink:0;
+}
+#chat-input {
+  flex:1;padding:8px 12px;border:1.5px solid #ddd;border-radius:20px;
+  font-size:0.83rem;outline:none;font-family:inherit;
+}
+#chat-input:focus { border-color:#00838f; }
+#chat-send {
+  background:linear-gradient(135deg,#006064,#00838f);
+  color:white;border:none;border-radius:20px;
+  padding:8px 16px;font-size:0.82rem;font-weight:700;cursor:pointer;
+}
+#chat-send:hover { opacity:0.88; }
+[data-theme="dark"] #chat-panel { background:#1e2130 !important;border-color:#2e3250 !important; }
+[data-theme="dark"] .chat-msg.bot { background:#252840 !important;color:#c0c8d8 !important; }
+[data-theme="dark"] .chat-chip { background:#1e2130 !important;color:#80cbc4 !important;border-color:#00838f !important; }
+[data-theme="dark"] .chat-chip:hover { background:#252840 !important; }
+[data-theme="dark"] .chat-input-row { border-color:#2e3250 !important; }
+[data-theme="dark"] #chat-input { background:#252840 !important;color:#d0d4e0 !important;border-color:#2e3250 !important; }
+
 </style>
 </head>
 <body>
@@ -812,7 +882,7 @@
     <button id="theme-toggle-btn" onclick="openThemePicker(event)" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.9);border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.22)'" onmouseout="this.style.background='rgba(255,255,255,0.12)'" data-i18n="btnTheme">🎨 테마</button>
     <div style="width:1px;height:20px;background:rgba(255,255,255,0.2);margin:0 4px;"></div>
     <div style="text-align:right;opacity:0.7;font-size:0.78rem;line-height:1.6;">
-      <div style="font-weight:600;">v2026.05.28</div>
+      <div style="font-weight:600;">v2026.06.11</div>
       <div>JYH</div>
     </div>
   </div>
@@ -921,6 +991,10 @@
         <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;cursor:pointer;">
           <input type="checkbox" id="excl-fid" style="width:15px;height:15px;accent-color:#3949ab;">
           <span><b>FID / FD</b> — 피듀셜 마크</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;cursor:pointer;">
+          <input type="checkbox" id="excl-ict" checked style="width:15px;height:15px;accent-color:#3949ab;">
+          <span><b>ICT</b> — ICT 포인트 (Part Type:ICT_POINT 또는 숫자 전용 RefDes)</span>
         </label>
         <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;cursor:pointer;">
           <input type="checkbox" id="excl-clamp" style="width:15px;height:15px;accent-color:#3949ab;">
@@ -1353,6 +1427,7 @@ function runMatch() {
   if (document.getElementById('excl-tp').checked)    exclPrefixes.push('TP');
   if (document.getElementById('excl-clamp').checked) exclPrefixes.push('CLAMP','CLP','HOLE','MTG','MH');
   const exclFid = document.getElementById('excl-fid').checked;
+  const exclIct = document.getElementById('excl-ict').checked;
   const customExcl = document.getElementById('excl-custom').value;
   if (customExcl.trim()) {
     customExcl.split(',').map(s=>s.trim().toUpperCase()).filter(Boolean).forEach(p=>exclPrefixes.push(p));
@@ -1374,6 +1449,12 @@ function runMatch() {
     const ptype = String(row['Part Type'] || row['PartType'] || '').toUpperCase();
     return ptype === 'HOLE' || decal.includes('HOLE') || decal.includes('SCREW-PAD') || decal.includes('SCREW_PAD');
   }
+  function isIctPoint(row) {
+    // Part Type에 ICT 포함이거나, RefDes가 순수 숫자(알파벳 없는)인 경우
+    const ptype = String(row['Part Type'] || row['PartType'] || '').toUpperCase();
+    const ref = String(row[coordRefCol] || '').trim();
+    return ptype.includes('ICT') || /^\d+$/.test(ref);
+  }
 
   // Build coord lookup map (제외 항목 스킵)
   const coordMap = {};
@@ -1384,6 +1465,8 @@ function runMatch() {
     if (isExcluded(ref)) { excludedCount++; continue; }
     // FID 제외: Decal/Part Type의 FIDUCIAL 여부로 판단
     if (exclFid && isFiducial(row)) { excludedCount++; continue; }
+    // ICT 제외: Part Type에 ICT 포함 또는 숫자 전용 RefDes
+    if (exclIct && isIctPoint(row)) { excludedCount++; continue; }
     // 고정홀 제외: Part Type=HOLE 또는 Decal에 HOLE 포함
     if (exclClamp && isMountingHole(row)) { excludedCount++; continue; }
     coordMap[ref.toUpperCase()] = row;
@@ -1736,7 +1819,7 @@ function sendFeedback() {
     type,
     title,
     content,
-    version: 'v2026.05.28'
+    version: 'v2026.06.11'
   };
 
   // 전송 버튼 로딩 표시
@@ -2531,6 +2614,23 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
 <!-- FAB -->
 <button id="fab-edit" onclick="openEditPanel()" data-i18n="fabEdit">✏️ 수정 페이지</button>
 
+<!-- 도움말 챗봇 FAB -->
+<button id="chat-fab" onclick="toggleChat()">💬 사용법 질문</button>
+
+<!-- 도움말 챗봇 패널 -->
+<div id="chat-panel">
+  <div class="chat-hdr">
+    <span class="chat-hdr-title">💬 도움말 봇</span>
+    <button class="chat-hdr-close" onclick="toggleChat()">✕ 닫기</button>
+  </div>
+  <div class="chat-msgs" id="chat-msgs"></div>
+  <div class="chat-chips-wrap" id="chat-chips"></div>
+  <div class="chat-input-row">
+    <input id="chat-input" placeholder="궁금한 점을 입력하세요..." onkeydown="if(event.key==='Enter')sendChat()">
+    <button id="chat-send" onclick="sendChat()">전송</button>
+  </div>
+</div>
+
 <!-- ═══ 수정 페이지 슬라이드 패널 ═══ -->
 <div id="edit-overlay" onclick="closeEditPanel()"></div>
 <div id="edit-panel">
@@ -2900,12 +3000,20 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
     <button class="side-panel-close" onclick="closePanel()">← 닫기</button>
   </div>
   <div class="side-panel-body">
-      <div class="history-item">
+    <div class="history-item">
+      <div class="history-date">2026.06.11</div>
+      <div class="history-content">
+        <span class="history-tag tag-feat">기능</span>🔌 ICT 포인트 자동 제외 — Part Type: ICT_POINT 또는 숫자 전용 RefDes(1,2,3…) 자동 감지 후 제외<br>
+        <span class="history-tag tag-ui">UI</span>제외 설정에 <b>ICT</b> 체크박스 추가 (기본 체크)
+      </div>
+    </div>
+    <div class="history-item">
       <div class="history-date">2026.05.28</div>
       <div class="history-content">
         <span class="history-tag tag-ui">UI</span>🌐 다국어 지원 — 한국어·English·中文(简体)·日本語 4개 언어 전환<br>
         <span class="history-tag tag-ui">UI</span>언어 선택 버튼 헤더에 추가 (🌐 KO 버튼)<br>
-        <span class="history-tag tag-feat">기능</span>선택 언어 브라우저 자동 저장 (localStorage)
+        <span class="history-tag tag-feat">기능</span>선택 언어 브라우저 자동 저장 (localStorage)<br>
+        <span class="history-tag tag-fix">FIX</span>엑셀 시트명 이모지 제거 — Excel 2013 호환성 확보 (규격불일치·BOM만·좌표만)
       </div>
     </div>
     <div class="history-item">
@@ -3952,6 +4060,215 @@ document.addEventListener('click', function(e) {
   if (!picker || picker.style.display === 'none') return;
   if (!picker.contains(e.target) && (!btn || !btn.contains(e.target))) closeLangPicker();
 });
+
+// ══════════════════════════════════════════
+// 도움말 챗봇
+// ══════════════════════════════════════════
+const CHAT_FAQ = [
+  {
+    id:'contact',
+    keywords:['안돼','안됨','안되','오류','에러','error','문의','연락','담당','누구','말해','물어','이상','작동','실패','버그','모르겠','해결','도움','wrong','fix'],
+    chips:['파일 업로드 방법','매칭 실행하기','헤더 행 번호란?'],
+    answer:'🙋 <b>담당자 문의</b><br><br>매칭이 안 되거나 오류가 발생하면<br><b>JYH</b>에게 직접 문의해주세요!<br><br>문의 시 아래 내용을 함께 알려주시면<br>빠르게 해결할 수 있어요 😊<br><br>· 사용 중인 BOM / 좌표 파일<br>· 어떤 증상인지 (결과 없음, 오류 메시지 등)<br>· 설정값 (헤더 행 번호, 컬럼 선택 등)'
+  },
+  {
+    id:'upload',
+    keywords:['업로드','올리','파일','시작','어떻게','사용','처음','불러'],
+    chips:['매칭 실행하기','헤더 행 번호란?','컬럼 자동감지'],
+    answer:'📁 <b>파일 업로드 방법</b><br><br>① <b>BOM 파일</b> — 좌측 카드 클릭하거나 파일 드래그&amp;드롭<br>② <b>좌표 데이터</b> — 우측 카드 클릭하거나 드래그&amp;드롭<br>③ .xlsx, .xls 형식 지원<br>④ 시트가 여러 개면 드롭다운에서 원하는 시트 선택'
+  },
+  {
+    id:'match',
+    keywords:['매칭','실행','결과','버튼','클릭'],
+    chips:['규격 불일치란?','필터 사용법','엑셀 내보내기'],
+    answer:'🔗 <b>매칭 실행</b><br><br>① BOM + 좌표 파일 모두 업로드<br>② 컬럼 자동 감지됨 (틀리면 수동 변경 가능)<br>③ <b>"🔗 매칭 실행"</b> 버튼 클릭<br><br>결과 테이블에 상태별 색상으로 표시됩니다.'
+  },
+  {
+    id:'header',
+    keywords:['헤더','행번호','헤더행','몇번째','2행','3행','인식안','컬럼없','설정'],
+    chips:['파일 업로드 방법','매칭 실행하기'],
+    answer:'📋 <b>좌표 헤더 행 번호 설정</b><br><br>좌표 파일에 제목/빈 행이 있을 때 조정하세요.<br><br>· 헤더가 <b>1행</b>에 있으면 → <b>0</b><br>· 헤더가 <b>2행</b>에 있으면 → <b>1</b><br>· 헤더가 <b>3행</b>에 있으면 → <b>2</b> (기본값)<br><br>설정 후 매칭 실행을 다시 눌러주세요.'
+  },
+  {
+    id:'mismatch',
+    keywords:['규격','불일치','mismatch','칩','사이즈','1608','2012','3216','피치','패키지','sod','sot'],
+    chips:['BOM만 항목이란?','좌표만 항목이란?','엑셀 내보내기'],
+    answer:'⚡ <b>규격 불일치</b><br><br>BOM 규격과 좌표 Decal의 <b>칩 사이즈·피치·패키지</b>가 다를 때 표시됩니다.<br><br>예시:<br>· BOM: 1608 → 좌표: 2012 → ⚡ 불일치<br>· BOM: P5.0 → 좌표: P7.5 → ⚡ 불일치<br>· BOM: SOD-123 → 좌표: SOD-323 → ⚡ 불일치<br><br>불일치 셀은 분홍색으로 강조 표시됩니다.'
+  },
+  {
+    id:'bom_only',
+    keywords:['bom만','bomonly','❌','좌표없','좌표에없'],
+    chips:['좌표만 항목이란?','NC 항목 설정'],
+    answer:'❌ <b>BOM만 항목</b><br><br>BOM에는 있는데 좌표 데이터에 <b>없는 부품</b>입니다.<br><br>주요 원인:<br>· 좌표 파일에서 해당 RefDes 누락<br>· RefDes 철자 불일치 (C001 vs C1)<br>· 실장 안 된 부품<br><br>수정 페이지에서 삭제 후 저장 가능'
+  },
+  {
+    id:'coord_only',
+    keywords:['좌표만','coordonly','⚠️','bom없','bom에없','좌표에만'],
+    chips:['BOM만 항목이란?','NC 항목 설정','제외 설정 방법'],
+    answer:'⚠️ <b>좌표만 항목</b><br><br>좌표 데이터에는 있는데 BOM에 <b>없는 항목</b>입니다.<br><br>주로 나오는 것들:<br>· TP(테스트포인트), FID(피듀셜), ICT 포인트 → 제외 설정에서 체크<br>· 실제 BOM 누락 부품<br><br>의도적으로 빠진 항목은 <b>NC 처리</b> 가능'
+  },
+  {
+    id:'nc',
+    keywords:['nc','noconnect','no connect','실장안','nc처리','nc지정'],
+    chips:['좌표만 항목이란?','제외 설정 방법'],
+    answer:'🚫 <b>NC (No Connect) 항목</b><br><br>좌표에는 있지만 의도적으로 <b>실장하지 않는</b> 부품입니다.<br><br>설정 방법:<br>① 설정 하단 <b>NC 텍스트박스</b>에 RefDes 입력 (예: C99, JP1)<br>② 결과 테이블 체크박스 클릭 → NC 토글<br><br>NC 항목은 좌표만 카운트에서 분리됩니다.'
+  },
+  {
+    id:'excl',
+    keywords:['제외','tp','fid','ict','fiducial','피듀셜','테스트포인트','제외설정','clamp','hole'],
+    chips:['ICT 포인트 제외','TP 제외','직접 입력 제외'],
+    answer:'🚫 <b>좌표 데이터 제외 설정</b><br><br>· <b>TP</b> — 테스트포인트 (기본 체크)<br>· <b>FID / FD</b> — 피듀셜 마크<br>· <b>ICT</b> — ICT포인트, 숫자 전용 RefDes(1,2,3…) <b>기본 체크</b><br>· <b>CLAMP / HOLE / MTG</b> 등 — 고정홀류<br>· <b>직접 입력</b> — 커스텀 prefix 쉼표 구분 입력<br><br>체크한 항목은 매칭 결과에서 자동 제외됩니다.'
+  },
+  {
+    id:'ict',
+    keywords:['ict','ict_point','숫자refdes','번호만','1 2 3','숫자로','번호로'],
+    chips:['제외 설정 방법','좌표만 항목이란?'],
+    answer:'🔌 <b>ICT 포인트 제외</b><br><br>일부 좌표 파일은 ICT 포인트 RefDes가 <b>숫자(1, 2, 3…)</b>입니다.<br><br><b>"ICT" 체크박스</b>를 체크하면:<br>· Part Type: ICT_POINT 항목 자동 제외<br>· RefDes가 순수 숫자인 항목도 제외<br><br>기본값으로 <b>체크되어 있습니다.</b>'
+  },
+  {
+    id:'excel',
+    keywords:['엑셀','excel','내보내기','저장','다운로드','xlsx','파일저장'],
+    chips:['선택 항목만 저장','수정 페이지 기능'],
+    answer:'📥 <b>엑셀 내보내기</b><br><br>· <b>전체 저장</b> — 필터바 "📥 전체 저장" 버튼<br>· <b>선택 저장</b> — 체크박스로 선택 후 "📤 선택 저장"<br>· <b>수정 후 저장</b> — 우측 하단 "✏️ 수정 페이지" 버튼<br><br>내보내기 시트 구성:<br>· 전체 결과 + 규격불일치/BOM만/좌표만 별도 시트'
+  },
+  {
+    id:'filter',
+    keywords:['필터','검색','보기','상태별','분류','찾기'],
+    chips:['RefDes 검색','엑셀 내보내기'],
+    answer:'🔍 <b>필터 &amp; 검색</b><br><br><b>필터 버튼:</b><br>전체 / ✅매칭 / ⚡규격불일치 / ❌BOM만 / ⚠️좌표만 / 🚫NC / BOM중복<br><br><b>RefDes 검색</b> — 필터바 오른쪽 검색창에 입력하면 실시간 필터링<br><br>필터 + 검색을 동시에 사용 가능합니다.'
+  },
+  {
+    id:'compare',
+    keywords:['버전비교','비교','구버전','신버전','변경','추가부품','삭제부품'],
+    chips:['비교 결과 엑셀 저장'],
+    answer:'📊 <b>BOM 버전 비교</b><br><br>상단 탭 <b>"📊 BOM 버전 비교"</b> 클릭<br><br>① 구버전 BOM 파일 업로드<br>② 신버전 BOM 파일 업로드<br>③ <b>"🔍 버전 비교 실행"</b> 클릭<br><br>결과:<br>· ➕ 추가된 부품 (신버전에만)<br>· ➖ 삭제된 부품 (구버전에만)<br>· 🔄 변경된 부품 (규격·품명 변경)'
+  },
+  {
+    id:'qty',
+    keywords:['수량','qty','단위수량','개수','수량불일치'],
+    chips:['중복 RefDes란?','매칭 실행하기'],
+    answer:'🔢 <b>수량 불일치 감지</b><br><br>설정에서 <b>단위수량 컬럼</b>을 선택하면 자동 확인합니다.<br><br>Location의 RefDes 개수(C1,C2,C3 = 3개)와 단위수량 값이 다르면 필터바에 경고 표시됩니다.<br><br>단위수량 컬럼이 없으면 <b>"-- 사용 안 함 --"</b>으로 두세요.'
+  },
+  {
+    id:'dup',
+    keywords:['중복','duplicate','dup','같은refdes','여러행','두번'],
+    chips:['수량 불일치란?','매칭 실행하기'],
+    answer:'⚠ <b>BOM 중복 RefDes</b><br><br>같은 RefDes가 BOM 여러 행에 <b>중복 등장</b>할 때 표시됩니다.<br><br>· 중복 행은 보라색 하이라이트<br>· 매칭은 <b>마지막 행</b> 데이터로 처리됨<br>· 필터바 "⚠ BOM중복" 버튼으로 모아 확인 가능<br><br>BOM 원본 정리를 권장합니다.'
+  },
+  {
+    id:'edit',
+    keywords:['수정','편집','edit','수정페이지','✏️','인라인','셀수정'],
+    chips:['엑셀 내보내기'],
+    answer:'✏️ <b>수정 페이지</b><br><br>우측 하단 <b>"✏️ 수정 페이지"</b> 버튼 클릭<br><br>옵션:<br>· BOM only 항목 삭제<br>· 좌표 only 항목 BOM에 추가<br>· 중복 항목 제거<br>· 웹에서 셀 직접 수정 (품명·규격 클릭 편집)<br>· 불일치 리포트 시트 / 변경이력 로그 포함 옵션'
+  },
+  {
+    id:'theme',
+    keywords:['테마','다크','라이트','색상','컬러','배경','dark','light','모드'],
+    chips:['언어 변경하기'],
+    answer:'🎨 <b>테마 설정</b><br><br>헤더 우측 <b>"🎨 테마"</b> 버튼 클릭<br><br>· <b>밝기</b> — ☀️ 라이트 / 🌙 다크 모드<br>· <b>포인트 컬러</b> — 블루·그린·퍼플·틸·슬레이트 5가지<br><br>설정은 브라우저에 자동 저장됩니다.'
+  },
+  {
+    id:'lang',
+    keywords:['언어','영어','중국어','일본어','language','english'],
+    chips:['테마 변경하기'],
+    answer:'🌐 <b>언어 변경</b><br><br>헤더 우측 <b>"🌐 KO"</b> 버튼 클릭<br><br>지원 언어:<br>· 🇰🇷 한국어 · 🇺🇸 English<br>· 🇨🇳 中文(简体) · 🇯🇵 日本語<br><br>선택 언어는 브라우저에 저장됩니다.'
+  },
+  {
+    id:'autosave',
+    keywords:['자동저장','기억','저장됨','설정유지','재실행'],
+    chips:['테마 변경하기','제외 설정 방법'],
+    answer:'💾 <b>자동 저장</b><br><br>다음 설정이 이 PC 브라우저에 저장됩니다:<br><br>· 컬럼 매핑 (Location, 품명, 규격, Decal 등)<br>· 제외 옵션 체크 상태<br>· 테마 / 언어 설정<br><br>같은 PC에서 다시 열면 이전 설정이 유지됩니다.'
+  },
+  {
+    id:'feedback',
+    keywords:['피드백','건의','제안','버그','신고','개선','요청','불편'],
+    chips:['파일 업로드 방법'],
+    answer:'💡 <b>개선 제안 / 피드백</b><br><br>상단 탭 우측 <b>"💡 개선 제안"</b> 버튼 클릭<br><br>· 기능 요청 / 버그 신고 / UI 개선 제안<br><br>전송하면 구글 스프레드시트에 자동 저장됩니다 😊'
+  },
+];
+
+const CHAT_WELCOME_CHIPS = [
+  '파일 업로드 방법','매칭 실행하기','규격 불일치란?',
+  '제외 설정 방법','엑셀 내보내기','오류 발생 시 문의'
+];
+
+let chatOpen = false;
+
+function toggleChat() {
+  chatOpen = !chatOpen;
+  const panel = document.getElementById('chat-panel');
+  if (chatOpen) {
+    panel.classList.add('open');
+    const msgs = document.getElementById('chat-msgs');
+    if (msgs.children.length === 0) {
+      appendChatMsg('안녕하세요! 👋<br>BOM 매칭 툴 사용에 대해 무엇이든 물어보세요 😊', 'bot');
+      showChatChips(CHAT_WELCOME_CHIPS);
+    }
+    setTimeout(() => document.getElementById('chat-input').focus(), 200);
+  } else {
+    panel.classList.remove('open');
+  }
+}
+
+function appendChatMsg(html, type) {
+  const msgs = document.getElementById('chat-msgs');
+  const div = document.createElement('div');
+  div.className = 'chat-msg ' + type;
+  div.innerHTML = html;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showChatChips(chips) {
+  const wrap = document.getElementById('chat-chips');
+  wrap.innerHTML = '';
+  chips.forEach(chip => {
+    const btn = document.createElement('button');
+    btn.className = 'chat-chip';
+    btn.textContent = chip;
+    btn.onclick = () => {
+      wrap.innerHTML = '';
+      appendChatMsg(chip, 'user');
+      const ans = findChatAnswer(chip);
+      setTimeout(() => {
+        appendChatMsg(ans.answer, 'bot');
+        showChatChips(ans.chips && ans.chips.length ? ans.chips : CHAT_WELCOME_CHIPS);
+      }, 250);
+    };
+    wrap.appendChild(btn);
+  });
+}
+
+function findChatAnswer(input) {
+  const q = input.toLowerCase().replace(/\s+/g, '');
+  let best = null, bestScore = 0;
+  for (const faq of CHAT_FAQ) {
+    let score = 0;
+    for (const kw of faq.keywords) {
+      if (q.includes(kw.toLowerCase().replace(/\s+/g, ''))) score++;
+    }
+    if (score > bestScore) { bestScore = score; best = faq; }
+  }
+  if (best && bestScore > 0) return best;
+  return {
+    answer: '죄송해요, 잘 모르겠어요 😅<br>다른 표현으로 질문해보시거나 아래 항목 중 선택해보세요!',
+    chips: CHAT_WELCOME_CHIPS
+  };
+}
+
+function sendChat() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  document.getElementById('chat-chips').innerHTML = '';
+  appendChatMsg(text, 'user');
+  const ans = findChatAnswer(text);
+  setTimeout(() => {
+    appendChatMsg(ans.answer, 'bot');
+    showChatChips(ans.chips && ans.chips.length ? ans.chips : CHAT_WELCOME_CHIPS);
+  }, 300);
+}
 
 // ── 언어 시스템 초기화 (STRINGS 선언 후 실행) ──
 loadLang();
