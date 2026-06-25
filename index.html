@@ -602,7 +602,7 @@
 #cmp-results { display: none; }
 
 /* ═══════════════════════════════════════════════════════════
-   THEME SYSTEM  (v2026.06.11)
+   THEME SYSTEM  (v2026.06.25)
    — Accent colors (blue/green/purple/teal/slate)
    — Dark mode
    ═══════════════════════════════════════════════════════════ */
@@ -900,7 +900,7 @@
     <button id="theme-toggle-btn" onclick="openThemePicker(event)" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.9);border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.22)'" onmouseout="this.style.background='rgba(255,255,255,0.12)'" data-i18n="btnTheme">🎨 테마</button>
     <div style="width:1px;height:20px;background:rgba(255,255,255,0.2);margin:0 4px;"></div>
     <div style="text-align:right;opacity:0.7;font-size:0.78rem;line-height:1.6;">
-      <div style="font-weight:600;">v2026.06.11</div>
+      <div style="font-weight:600;">v2026.06.25</div>
       <div>JYH</div>
     </div>
   </div>
@@ -1837,7 +1837,7 @@ function sendFeedback() {
     type,
     title,
     content,
-    version: 'v2026.06.11'
+    version: 'v2026.06.25'
   };
 
   // 전송 버튼 로딩 표시
@@ -3029,6 +3029,17 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
     <button class="side-panel-close" onclick="closePanel()">← 닫기</button>
   </div>
   <div class="side-panel-body">
+    <div class="history-item">
+      <div class="history-date">2026.06.25</div>
+      <div class="history-content">
+        <span class="history-tag tag-feat">기능</span>✨ Gemini AI 챗봇 연동 — Google Gemini 2.5 Flash 기반 AI 도우미 탑재<br>
+        <span class="history-tag tag-ui">UI</span>AI 도우미 FAB 버튼 및 채팅 패널 추가 (헤더에 Gemini AI 브랜딩)<br>
+        <span class="history-tag tag-feat">기능</span>챗봇 오류 처리 — 요청 한도(429)·서버 불안정(503)·키 오류 시 친절한 안내<br>
+        <span class="history-tag tag-feat">기능</span>FAQ 폴백 모드 — AI 연결 실패 시 기본 FAQ로 자동 전환<br>
+        <span class="history-tag tag-fix">FIX</span>const key 중복 선언 SyntaxError 수정 (toggleChat 함수)<br>
+        <span class="history-tag tag-fix">FIX</span>feedback-modal null 오류 수정 (addEventListener 조건 처리)
+      </div>
+    </div>
     <div class="history-item">
       <div class="history-date">2026.06.11</div>
       <div class="history-content">
