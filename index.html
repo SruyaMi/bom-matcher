@@ -1745,8 +1745,18 @@ function runMatch() {
   const tabDefs = [
     { id:'skip', label:'⚠ 비PCB 스킵',  count:skippedTokens.length, cls:'t-skip' },
     { id:'qty',  label:'🔢 수량 불일치', count:qtyMismatches.length, cls:'t-qty'  },
-    { id:'dup',  label:'⚠ BOM 중복',    count:dupList.length,        cls:'t-dup'  },
   ].filter(t => t.count > 0);
+
+  // BOM중복 필터 버튼에 개수 표시
+  const dupFilterBtn = document.getElementById('dup-filter-btn');
+  if (dupFilterBtn) {
+    if (dupList.length > 0) {
+      dupFilterBtn.style.display = '';
+      dupFilterBtn.innerHTML = `⚠ BOM중복 <span class="tab-badge" style="background:rgba(255,255,255,0.35);color:inherit;">${dupList.length}</span>`;
+    } else {
+      dupFilterBtn.style.display = 'none';
+    }
+  }
 
   const btnGroup = document.getElementById('info-btn-group');
   btnGroup.innerHTML = tabDefs.map(t =>
