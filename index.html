@@ -872,13 +872,6 @@
 .typing-dot:nth-child(2){animation-delay:.2s}
 .typing-dot:nth-child(3){animation-delay:.4s}
 @keyframes typingBounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-7px)}}
-.chat-key-area { padding:12px 14px;border-top:1px solid #eee;flex-shrink:0; }
-.chat-key-area p { font-size:0.77rem;color:#666;margin:0 0 8px;line-height:1.55; }
-.chat-key-area p a { color:#00838f;text-decoration:none; }
-#chat-key-in { width:100%;padding:7px 11px;border:1.5px solid #ddd;border-radius:8px;font-size:0.78rem;margin-bottom:8px;font-family:inherit;outline:none; }
-#chat-key-in:focus { border-color:#00838f; }
-.chat-key-btns { display:flex;gap:6px; }
-.chat-key-btns button { flex:1;padding:7px 0;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;border:none; }
 .btn-key-save { background:linear-gradient(135deg,#006064,#00838f);color:white; }
 .btn-key-cancel { background:#f0f0f0;color:#666; }
 [data-theme="dark"] .chat-key-area { border-color:#2e3250!important; }
@@ -2649,26 +2642,16 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
 <button id="fab-edit" onclick="openEditPanel()">✏️<span class="fab-text" data-i18n="fabEdit">수정 페이지</span></button>
 
 <!-- 도움말 챗봇 FAB -->
-<button id="chat-fab" onclick="toggleChat()">✨<span class="fab-text">AI 도우미</span></button>
+<button id="chat-fab" onclick="toggleChat()">💬<span class="fab-text">도우미</span></button>
 
 <!-- 도움말 챗봇 패널 -->
 <div id="chat-panel">
   <div class="chat-hdr">
-    <span class="chat-hdr-title">✨ Gemini AI 도우미</span>
-    <span style="font-size:0.68rem;opacity:0.75;margin-right:auto;margin-left:4px;white-space:nowrap;">powered by Google</span>
-    <button id="chat-api-btn" onclick="toggleApiSetup()" title="Gemini AI 키 설정" style="background:rgba(255,255,255,0.14);border:none;color:rgba(255,255,255,0.9);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:0.8rem;margin-right:4px;flex-shrink:0;">⚙️</button>
+    <span class="chat-hdr-title">💬 도우미</span>
     <button class="chat-hdr-close" onclick="toggleChat()">✕ 닫기</button>
   </div>
   <div class="chat-msgs" id="chat-msgs"></div>
   <div class="chat-chips-wrap" id="chat-chips"></div>
-  <div class="chat-key-area" id="chat-key-area" style="display:none;">
-    <p>🤖 <b>Gemini AI 연동</b><br>API 키를 입력하면 AI가 자유롭게 답변합니다.<br><a href="https://aistudio.google.com/app/apikey" target="_blank">무료 키 발급 →</a></p>
-    <input type="password" id="chat-key-in" placeholder="AIzaSy..." />
-    <div class="chat-key-btns">
-      <button class="btn-key-save" onclick="confirmApiKey()">✔ 저장</button>
-      <button class="btn-key-cancel" onclick="toggleApiSetup()">취소</button>
-    </div>
-  </div>
   <div class="chat-input-row">
     <input id="chat-input" placeholder="궁금한 점을 입력하세요..." onkeydown="if(event.key==='Enter')sendChat()">
     <button id="chat-send" onclick="sendChat()">전송</button>
@@ -4119,25 +4102,6 @@ document.addEventListener('click', function(e) {
 // ══════════════════════════════════════════
 // 도움말 챗봇  (Gemini AI + FAQ 폴백)
 // ══════════════════════════════════════════
-const GEMINI_KEY_DEFAULT = 'AQ.Ab8RN6LkUDDchpnLL6E12isrS6TE6YHKF3tzU_Xgthp7Tca7kA';
-const GEMINI_LS_KEY = 'bom_tool_gemini_key_v1';
-const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
-const GEMINI_SYSTEM = `당신은 PCB BOM ↔ 좌표 데이터 매칭 툴의 전문 도우미 봇입니다.
-
-이 툴의 주요 기능:
-- BOM 파일(.xlsx/.xls)과 좌표 데이터 파일 업로드 후 RefDes 기반 매칭
-- 매칭 결과 상태: ✅매칭됨 / ⚡규격불일치 / ❌BOM만 / ⚠️좌표만 / 🚫NC
-- 좌표 헤더 행 번호 설정 (기본값 2 = 파일의 3번째 행이 헤더)
-- 제외 설정: TP(테스트포인트), FID/FD(피듀셜), ICT(ICT_POINT 및 숫자 전용 RefDes 1,2,3 포함), CLAMP/HOLE/MTG, 직접 입력
-- NC 설정: 좌표에만 있는 항목을 의도적으로 No Connect 처리
-- 규격 불일치: BOM 규격(칩 사이즈/피치/패키지)과 좌표 Decal 불일치 감지
-- BOM 버전 비교: 구버전 vs 신버전 BOM 비교 (추가/삭제/변경 부품)
-- 엑셀 내보내기: 전체 저장, 선택 저장, 수정 후 저장
-- 수정 페이지: BOM only 삭제, 좌표 only 추가, 셀 인라인 편집
-- 다국어: 한국어/영어/중국어/일본어, 테마: 라이트/다크 + 5가지 색상
-
-중요: 오류가 발생하거나 매칭이 안 되는 문제는 반드시 담당자 JYH에게 직접 문의하라고 안내하세요.
-짧고 친절하게 한국어로 답변하세요. HTML 태그 없이, 마크다운(**굵게**, *기울임*, ## 제목 등) 없이 순수 일반 텍스트로만 답변하세요.`;
 
 const CHAT_FAQ = [
   {
@@ -4268,12 +4232,6 @@ const CHAT_WELCOME_CHIPS = [
 ];
 
 let chatOpen = false;
-let geminiHistory = [];
-
-function getGeminiKey() {
-  return GEMINI_KEY_DEFAULT || localStorage.getItem(GEMINI_LS_KEY) || '';
-}
-
 function toggleChat() {
   chatOpen = !chatOpen;
   const panel = document.getElementById('chat-panel');
@@ -4281,65 +4239,13 @@ function toggleChat() {
     panel.classList.add('open');
     const msgs = document.getElementById('chat-msgs');
     if (msgs.children.length === 0) {
-      const key = getGeminiKey();
-      if (key) {
-        appendChatMsg('안녕하세요! 👋 <b>Gemini AI</b>가 답변해드립니다.<br>BOM 매칭 툴에 대해 무엇이든 물어보세요 😊', 'bot');
-      } else {
-        appendChatMsg('안녕하세요! 👋<br>BOM 매칭 툴 사용에 대해 무엇이든 물어보세요 😊', 'bot');
-      }
+      appendChatMsg('안녕하세요! 👋<br>BOM 매칭 툴 사용에 대해 무엇이든 물어보세요 😊', 'bot');
       showChatChips(CHAT_WELCOME_CHIPS);
     }
     setTimeout(() => document.getElementById('chat-input').focus(), 200);
   } else {
     panel.classList.remove('open');
-    document.getElementById('chat-key-area').style.display = 'none';
   }
-}
-
-function toggleApiSetup() {
-  const area = document.getElementById('chat-key-area');
-  const isHidden = area.style.display === 'none';
-  area.style.display = isHidden ? 'block' : 'none';
-  if (isHidden) {
-    const key = getGeminiKey();
-    const inp = document.getElementById('chat-key-in');
-    if (key) {
-      inp.value = '';
-      inp.placeholder = '새 키 입력 (빈칸이면 현재 키 유지)';
-    } else {
-      inp.value = '';
-      inp.placeholder = 'AIzaSy...';
-      setTimeout(() => inp.focus(), 100);
-    }
-  }
-}
-
-function confirmApiKey() {
-  const inp = document.getElementById('chat-key-in');
-  const val = inp.value.trim();
-  if (!val) {
-    const existing = getGeminiKey();
-    if (existing) {
-      // 삭제 확인
-      localStorage.removeItem(GEMINI_LS_KEY);
-      geminiHistory = [];
-      document.getElementById('chat-key-area').style.display = 'none';
-      appendChatMsg('🗑️ API 키가 삭제됐어요. FAQ 모드로 전환됩니다.', 'bot');
-      showChatChips(CHAT_WELCOME_CHIPS);
-    } else {
-      document.getElementById('chat-key-area').style.display = 'none';
-    }
-    return;
-  }
-  if (val.length < 20) {
-    appendChatMsg('❌ API 키가 너무 짧아요. 키를 다시 확인해주세요.', 'bot');
-    return;
-  }
-  localStorage.setItem(GEMINI_LS_KEY, val);
-  geminiHistory = [];
-  document.getElementById('chat-key-area').style.display = 'none';
-  appendChatMsg('✅ Gemini AI 키가 저장됐어요!<br>이제 AI가 직접 답변합니다 🤖', 'bot');
-  showChatChips(CHAT_WELCOME_CHIPS);
 }
 
 function appendChatMsg(html, type) {
@@ -4400,68 +4306,12 @@ function findChatAnswer(input) {
   };
 }
 
-async function handleChat(text) {
-  const key = getGeminiKey();
-  if (key) {
-    await handleGemini(text, key);
-  } else {
-    const ans = findChatAnswer(text);
-    setTimeout(() => {
-      appendChatMsg(ans.answer, 'bot');
-      showChatChips(ans.chips && ans.chips.length ? ans.chips : CHAT_WELCOME_CHIPS);
-    }, 300);
-  }
-}
-
-async function handleGemini(text, key) {
-  const sendBtn = document.getElementById('chat-send');
-  const input = document.getElementById('chat-input');
-  sendBtn.disabled = true;
-  input.disabled = true;
-  showTyping();
-  geminiHistory.push({ role: 'user', parts: [{ text }] });
-  try {
-    const res = await fetch(`${GEMINI_ENDPOINT}?key=${key}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: GEMINI_SYSTEM }] },
-        contents: geminiHistory,
-        generationConfig: { temperature: 0.7, maxOutputTokens: 600 }
-      })
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(`HTTP_${res.status}: ${err.error?.message || ''}`);
-    }
-    const data = await res.json();
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '응답을 받지 못했습니다.';
-    geminiHistory.push({ role: 'model', parts: [{ text: reply }] });
-    hideTyping();
-    appendChatMsg(reply.replace(/\n/g, '<br>'), 'bot');
-    showChatChips(CHAT_WELCOME_CHIPS);
-  } catch (e) {
-    geminiHistory.pop();
-    hideTyping();
-    const msg = e.message || '';
-    if (msg.includes('API_KEY_INVALID') || msg.includes('400') || msg.includes('403')) {
-      appendChatMsg('❌ API 키가 올바르지 않아요.<br>⚙️ AI 버튼을 눌러 키를 다시 확인해주세요.', 'bot');
-    } else if (msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('exhausted')) {
-      appendChatMsg('⏳ 잠시 후 다시 시도해주세요!<br><small style="color:#aaa">분당 요청 한도 — 잠깐 기다렸다가 질문해주세요 😊</small>', 'bot');
-      showChatChips(CHAT_WELCOME_CHIPS);
-    } else if (msg.includes('503') || msg.includes('Service Unavailable')) {
-      appendChatMsg('⚠️ AI 서버가 잠시 불안정해요. 다시 시도해주세요!', 'bot');
-      showChatChips(CHAT_WELCOME_CHIPS);
-    } else {
-      const ans = findChatAnswer(text);
-      appendChatMsg('(AI 연결 실패 — FAQ 모드)<br>' + ans.answer, 'bot');
-      showChatChips(ans.chips && ans.chips.length ? ans.chips : CHAT_WELCOME_CHIPS);
-    }
-  } finally {
-    sendBtn.disabled = false;
-    input.disabled = false;
-    input.focus();
-  }
+function handleChat(text) {
+  const ans = findChatAnswer(text);
+  setTimeout(() => {
+    appendChatMsg(ans.answer, 'bot');
+    showChatChips(ans.chips && ans.chips.length ? ans.chips : CHAT_WELCOME_CHIPS);
+  }, 300);
 }
 
 async function sendChat() {
