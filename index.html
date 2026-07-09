@@ -898,7 +898,7 @@
     <button id="theme-toggle-btn" onclick="openThemePicker(event)" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.9);border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.22)'" onmouseout="this.style.background='rgba(255,255,255,0.12)'" data-i18n="btnTheme">🎨 테마</button>
     <div style="width:1px;height:20px;background:rgba(255,255,255,0.2);margin:0 4px;"></div>
     <div style="text-align:right;opacity:0.7;font-size:0.78rem;line-height:1.6;">
-      <div style="font-weight:600;">v2026.06.25</div>
+      <div style="font-weight:600;" id="app-version">v2026.07.09</div>
       <div>JYH</div>
     </div>
   </div>
@@ -1167,6 +1167,7 @@
             <th class="chk-col"><input type="checkbox" class="row-chk" id="chk-all" onclick="toggleSelectAll(this)" title="전체 선택/해제"></th>
             <th>RefDes</th>
             <th data-i18n="thStatus">상태</th>
+            <th data-i18n="thBasis">판정근거</th>
             <th data-i18n="thPartName">품명 (BOM)</th>
             <th data-i18n="thSpec">규격 (BOM)</th>
             <th>Maker</th>
@@ -1181,7 +1182,7 @@
         </thead>
         <tbody id="result-body">
           <tr>
-            <td colspan="13">
+            <td colspan="14">
               <div class="empty-state">
                 <div class="icon">📂</div>
                 <p data-i18n="emptyState">BOM 파일과 좌표 데이터 파일을 업로드한 후 매칭을 실행하세요</p>
@@ -1213,6 +1214,9 @@
 <script>
 // ─── State ───────────────────────────────────────────────
 let bomWorkbook = null, coordWorkbook = null;
+// ─── 앱 버전 (여기 한 곳만 수정하면 헤더·피드백에 자동 반영) ───
+const APP_VERSION = 'v2026.07.09';
+
 let bomData = [], coordData = [];
 let allRows = [];
 let currentFilter = 'all';
@@ -1230,8 +1234,22 @@ const CHIP_PAT   = /(?<![0-9])(0201|0402|0603|0805|1206|1210|1812|2512|1005|1608
 const DIODE_PKG_PAT = /(SOD-?\d+[A-Z]?|SOT-?\d+[A-Z]?|SM[ABCD])/i;
 // BOM 피치: P5.0, P7.5mm, P3.5 등 (PHI·PIN·PCB 제외, mm 선택)
 const BOM_PITCH  = /\bP(?!HI|CB|IN|CF|VF)(\d+(?:\.\d+)?)(?:mm)?(?=$|[,)\s/\\])/i;
-// Coord 피치: _P5_, _P7.5_ 형태 (언더스코어 사이)
-const COORD_PITCH = /_P(\d+(?:\.\d+)?)_/;
+// Coord 피치: _P5_, _P7.5_ 외에 _P15), _P17.5(끝) 등 괄호·끝 형태도 인식
+const COORD_PITCH = /_P(\d+(?:\.\d+)?)(?=[_,)\s]|$)/;
+// 선경(Φ): BOM "0.8PHI", "14 PHI" ↔ Decal "PI0.8", "PI14" (독립 토큰만, PIN 등 오인 방지)
+const BOM_PHI  = /(\d+(?:\.\d+)?)\s*PHI/i;
+const COORD_PI = /(?:^|[(_,\s])PI(\d+(?:\.\d+)?)(?=[_,)\s]|$)/i;
+// 아일렛 OD: BOM "OD 1.6", "OD2.0" ↔ Decal "EYELET(1.6)", "SUPPORT(EYELET-TYPE_OD2.0)"
+const BOM_OD = /OD\s*(\d+(?:\.\d+)?)/i;
+function coordOd(decal) {
+  const d = String(decal || '');
+  if (!d.toUpperCase().includes('EYELET')) return null; // EYELET 데칼 한정 (SOD 등 오탐 방지)
+  let m = /OD(\d+(?:\.\d+)?)/i.exec(d);
+  if (m) return parseFloat(m[1]);
+  m = /EYELET\((\d+(?:\.\d+)?)\)/i.exec(d);
+  if (m) return parseFloat(m[1]);
+  return null;
+}
 
 function normNum(v) { return String(parseFloat(v)); }
 function normPkg(raw) {
@@ -1257,11 +1275,120 @@ function extractInfo(text, isCoord) {
   return null;
 }
 
+// RT(Radial)/AT(Axial) 감지: 콤마·언더스코어·공백·괄호로 구분된 독립 토큰만 인식
+function detectRTAT(text) {
+  const t = String(text || '').toUpperCase();
+  const hasRT = /(?:^|[,_()\s])RT(?:[,_()\s]|$)/.test(t);
+  const hasAT = /(?:^|[,_()\s])AT(?:[,_()\s]|$)/.test(t);
+  if (hasRT) return 'RT';
+  if (hasAT) return 'AT';
+  return null;
+}
+
+// Decal에서 피치 숫자 추출 (_P13_, _P14, _P5_RT, SURGE_P14 등)
+function extractPitchNum(text) {
+  const t = String(text || '');
+  // _P13_ / _P13) / _P14(끝) 등 언더스코어 뒤 P + 숫자
+  let m = /_P(\d+(?:\.\d+)?)(?:[_,)\s]|$)/i.exec(t);
+  if (m) return parseFloat(m[1]);
+  // BOM 패턴: P5.0, P7.5mm 등 단어 경계
+  m = /\bP(\d+(?:\.\d+)?)(?:mm)?(?=$|[,_()\s])/i.exec(t);
+  if (m) return parseFloat(m[1]);
+  return null;
+}
+
 function checkSizeMatch(bomSpec, coordDecal) {
+  // 통과한 검증 항목 수집 → 판정근거(basis) 표시용
+  const passed = [];
+
+  // ★ RT/AT(Radial/Axial) 불일치 먼저 검사
+  const bomRA = detectRTAT(bomSpec);
+  const crdRA = detectRTAT(coordDecal);
+
+  if (bomRA === 'RT') {
+    if (crdRA === 'AT') {
+      return { match: false, bomSize: 'RT', coordSize: 'AT', basis: 'RT/AT' };
+    }
+    const p = extractPitchNum(coordDecal);
+    if (p === null) {
+      // RT든 AT든 피치 없으면 무조건 불일치
+      return { match: false, bomSize: 'RT', coordSize: '피치정보없음', basis: 'RT/AT' };
+    }
+    if (p === 5) {
+      passed.push('RT/AT'); // P5 → RT 확인, 통과
+    } else {
+      // P5 외 → 피치 확인 필요
+      return { match: false, bomSize: 'RT', coordSize: `P${p}(피치확인필요)`, basis: 'RT/AT' };
+    }
+  }
+
+  if (bomRA === 'AT') {
+    if (crdRA === 'RT') {
+      return { match: false, bomSize: 'AT', coordSize: 'RT', basis: 'RT/AT' };
+    }
+    const p = extractPitchNum(coordDecal);
+    if (p === null) {
+      // 피치 없으면 무조건 불일치
+      return { match: false, bomSize: 'AT', coordSize: '피치정보없음', basis: 'RT/AT' };
+    }
+    if (p >= 9) {
+      passed.push('RT/AT'); // P9 이상 → AT 범위, 통과
+    } else if (p === 5) {
+      return { match: false, bomSize: 'AT', coordSize: 'P5(피치확인필요)', basis: 'RT/AT' };
+    } else {
+      return { match: false, bomSize: 'AT', coordSize: `P${p}(피치확인필요)`, basis: 'RT/AT' };
+    }
+  }
+
+  // ★ 아일렛 OD 비교: Decal이 EYELET류일 때만, BOM OD와 양쪽 모두 있으면 비교
+  const cOd = coordOd(coordDecal);
+  if (cOd !== null) {
+    const bOd = BOM_OD.exec(String(bomSpec || ''));
+    if (bOd) {
+      if (parseFloat(bOd[1]) !== cOd) {
+        return { match: false, bomSize: `OD${parseFloat(bOd[1])}`, coordSize: `OD${cOd}`, basis: 'OD' };
+      }
+      passed.push('OD');
+    }
+  }
+
+  // ★ 선경(Φ) 비교: BOM PHI ↔ Decal PI 양쪽 모두 있을 때만 비교 (점퍼·바리스터 등)
+  //   한쪽만 있으면 통과 → 0.6PHI 점퍼(Decal에 PI 없음)는 기존대로 Location 비교만
+  const bPhi = BOM_PHI.exec(String(bomSpec || ''));
+  const cPhi = COORD_PI.exec(String(coordDecal || ''));
+  if (bPhi && cPhi) {
+    if (parseFloat(bPhi[1]) !== parseFloat(cPhi[1])) {
+      return { match: false, bomSize: `Φ${parseFloat(bPhi[1])}`, coordSize: `Φ${parseFloat(cPhi[1])}`, basis: 'Φ선경' };
+    }
+    passed.push('Φ선경');
+  }
+  // ★ 점퍼·바리스터 한정: BOM에 PHI가 있는데 Decal에 PI가 없으면 확인필요
+  //   (Φ0.6 점퍼는 데칼에 PI 미표기가 관례라 예외)
+  if (bPhi && !cPhi && parseFloat(bPhi[1]) !== 0.6) {
+    const _d = String(coordDecal || '').toUpperCase();
+    if (/^JP[(_]/.test(_d) || _d.includes('VARISTOR')) {
+      return { match: false, bomSize: `Φ${parseFloat(bPhi[1])}`, coordSize: 'PI정보없음(확인필요)', basis: 'Φ선경' };
+    }
+  }
+  // ★ 점퍼(JP) 피치 표기 확인: BOM이 점퍼(PHI 있음)이고 JP 데칼인데 피치 숫자가 없으면 확인필요
+  //   (0.6파이 점퍼는 Location 비교 + 데칼 피치값 존재 여부만 확인)
+  if (bPhi && /^JP[(_]/.test(String(coordDecal || '').toUpperCase())) {
+    if (extractPitchNum(coordDecal) === null) {
+      return { match: false, bomSize: `Φ${parseFloat(bPhi[1])}`, coordSize: '피치정보없음(확인필요)', basis: '피치존재' };
+    }
+    passed.push('피치존재');
+  }
+
+  // 최종 판정근거: 통과한 검증이 있으면 나열, 없으면 Location만
+  const basisOf = extra => {
+    const list = extra ? [...passed, extra] : [...passed];
+    return list.length ? list.join('+') : 'Location만';
+  };
+
   const bi = extractInfo(bomSpec,  false);
   const ci = extractInfo(coordDecal, true);
   // 양쪽 다 감지 못하면 비교 불가 → 매칭 처리
-  if (!bi && !ci) return { match: true, bomSize: null, coordSize: null };
+  if (!bi && !ci) return { match: true, bomSize: null, coordSize: null, basis: basisOf() };
 
   // ★ 칩사이즈 특별 처리: 어느 한쪽에 칩사이즈(1608·2012·3216 등)가 있으면
   //   상대편에도 반드시 같은 칩사이즈가 있어야 통과 (없거나 다르면 불일치)
@@ -1269,20 +1396,18 @@ function checkSizeMatch(bomSpec, coordDecal) {
     const bv = bi?.type === 'chip' ? bi.val : null;
     const cv = ci?.type === 'chip' ? ci.val : null;
     const match = bv !== null && cv !== null && bv === cv;
-    return { match, bomSize: bv, coordSize: cv };
+    return { match, bomSize: bv, coordSize: cv, basis: match ? basisOf('칩사이즈') : '칩사이즈' };
   }
 
   // 한쪽만 감지 (칩사이즈 외 타입) → 비교 불가 → 매칭 처리 (false positive 방지)
-  if (!bi || !ci) return { match: true, bomSize: bi?.val||null, coordSize: ci?.val||null };
+  if (!bi || !ci) return { match: true, bomSize: bi?.val||null, coordSize: ci?.val||null, basis: basisOf() };
   // 타입 다름 (피치 vs 패키지 등) → 비교 불가 → 매칭 처리
-  if (bi.type !== ci.type) return { match: true, bomSize: bi.val, coordSize: ci.val };
+  if (bi.type !== ci.type) return { match: true, bomSize: bi.val, coordSize: ci.val, basis: basisOf() };
   // 같은 타입 → 값 비교
   const match = (bi.val === ci.val);
-  return { match, bomSize: bi.val, coordSize: ci.val };
+  const typeLabel = { chip:'칩사이즈', pkg:'패키지', pitch:'피치' }[bi.type] || bi.type;
+  return { match, bomSize: bi.val, coordSize: ci.val, basis: match ? basisOf(typeLabel) : typeLabel };
 }
-
-// COORD_PITCH 보조: BOM_PITCH 패턴도 coord에서 시도 (언더스코어 없는 형식 대비)
-const COORD_PITCH_ALT = /\bP(?!HI|CB|IN|CF|VF)(\d+(?:\.\d+)?)(?:mm)?(?=$|[_,)\s/\\])/i;
 
 // ─── Drag & Drop Setup ───────────────────────────────────
 function setupDrop(dropId, inputId, handler) {
@@ -1596,7 +1721,8 @@ function runMatch() {
         smd: coordRow['SMD'] || '',
         partType: coordRow['Part Type'] || coordRow['PartType'] || '',
         bomSize: sizeChk.bomSize,
-        coordSize: sizeChk.coordSize
+        coordSize: sizeChk.coordSize,
+        basis: sizeChk.basis || ''
       });
     } else {
       allRows.push({
@@ -1606,7 +1732,7 @@ function runMatch() {
         bomSpec: bomRow[bomSpecCol] || '',
         bomMaker: bomRow[bomMakerCol] || '',
         decal:'',layer:'',posX:'',posY:'',orient:'',smd:'',partType:'',
-        bomSize: null, coordSize: null,
+        bomSize: null, coordSize: null, basis: '',
         isDup
       });
     }
@@ -1845,7 +1971,7 @@ function sendFeedback() {
     type,
     title,
     content,
-    version: 'v2026.06.25'
+    version: APP_VERSION
   };
 
   // 전송 버튼 로딩 표시
@@ -2016,7 +2142,7 @@ function renderTable(rows) {
                    : `<span style="color:#ff7043;font-size:0.78rem"> ⚠️칩사이즈없음</span>`)
       : '';
     const specCell  = isMismatch
-      ? `<td class="size-mismatch${eC}" data-refdes="${r.refdes}" data-field="bomSpec" contenteditable="${ec}" title="BOM칩사이즈: ${r.bomSize??'없음'}  |  Coord칩사이즈: ${r.coordSize??'없음'}" onblur="saveEdit(this)">${r.bomSpec}${specNote}</td>`
+      ? `<td class="size-mismatch${eC}" data-refdes="${r.refdes}" data-field="bomSpec" contenteditable="${ec}" title="BOM규격: ${r.bomSize??'없음'}  |  좌표규격: ${r.coordSize??'없음'}  |  판정: ${r.basis||'-'}" onblur="saveEdit(this)">${r.bomSpec}${specNote}</td>`
       : `<td class="${eC.trim()}" data-refdes="${r.refdes}" data-field="bomSpec" contenteditable="${ec}" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.bomSpec}" onblur="saveEdit(this)">${r.bomSpec || ''}</td>`;
     const nameCell  = `<td class="${eC.trim()}" data-refdes="${r.refdes}" data-field="bomName" contenteditable="${ec}" onblur="saveEdit(this)">${r.bomName || ''}</td>`;
     const decalNote = isMismatch
@@ -2024,7 +2150,7 @@ function renderTable(rows) {
                      : `<span style="color:#ff7043;font-size:0.78rem"> ⚠️칩사이즈없음</span>`)
       : '';
     const decalCell = isMismatch
-      ? `<td class="size-mismatch" title="BOM칩사이즈: ${r.bomSize??'없음'}  |  Coord칩사이즈: ${r.coordSize??'없음'}">${r.decal}${decalNote}</td>`
+      ? `<td class="size-mismatch" title="BOM규격: ${r.bomSize??'없음'}  |  좌표규격: ${r.coordSize??'없음'}  |  판정: ${r.basis||'-'}">${r.decal}${decalNote}</td>`
       : `<td>${r.decal || '<span class="na">-</span>'}</td>`;
     // NC 토글 버튼 (좌표만 / NC 행만 표시)
     const ncBtn = (isCoordOnly || isNc)
@@ -2035,6 +2161,11 @@ function renderTable(rows) {
       <td class="chk-col"><input type="checkbox" class="row-chk" ${isSelected ? 'checked' : ''} onchange="toggleRowSelect('${r.refdes}',this)"></td>
       <td><span class="refdes">${r.refdes}</span>${r.isDup ? ' <span style="background:#f3e5f5;color:#7b1fa2;border-radius:8px;padding:1px 6px;font-size:0.68rem;font-weight:700;vertical-align:middle;">중복</span>' : ''}${ncBtn}</td>
       <td><span class="status-badge ${statusClass[r.status]}">${statusLabel[r.status]}</span></td>
+      <td>${r.basis
+        ? (r.basis === 'Location만'
+            ? '<span style="color:#e65100;font-size:0.76rem;background:#fff3e0;border-radius:8px;padding:2px 7px;white-space:nowrap;">Location만</span>'
+            : `<span style="color:#2e7d32;font-size:0.76rem;background:#e8f5e9;border-radius:8px;padding:2px 7px;white-space:nowrap;">${r.basis}</span>`)
+        : '<span class="na">-</span>'}</td>
       ${nameCell}
       ${specCell}
       <td>${r.bomMaker || '<span class="na">-</span>'}</td>
@@ -2109,6 +2240,7 @@ function exportSelected() {
     '규격(BOM)': r.bomSpec,
     'BOM 추출 사이즈': r.bomSize || '',
     'Coord 추출 사이즈': r.coordSize || '',
+    '판정근거': r.basis || '',
     'Maker': r.bomMaker,
     'PCB Decal': r.decal,
     'Layer': r.layer,
@@ -2121,7 +2253,7 @@ function exportSelected() {
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.json_to_sheet(data);
   ws['!cols'] = [
-    {wch:12},{wch:10},{wch:20},{wch:35},{wch:14},{wch:14},
+    {wch:12},{wch:10},{wch:20},{wch:35},{wch:14},{wch:14},{wch:13},
     {wch:15},{wch:22},{wch:8},{wch:10},{wch:10},{wch:8},{wch:6},{wch:20}
   ];
   XLSX.utils.book_append_sheet(wb, ws, '선택항목');
@@ -2213,6 +2345,7 @@ function exportFiltered() {
     '규격(BOM)': r.bomSpec,
     'BOM 추출 사이즈': r.bomSize || '',
     'Coord 추출 사이즈': r.coordSize || '',
+    '판정근거': r.basis || '',
     'Maker': r.bomMaker,
     'PCB Decal': r.decal,
     'Layer': r.layer,
@@ -2226,7 +2359,7 @@ function exportFiltered() {
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.json_to_sheet(data);
   ws['!cols'] = [
-    {wch:12},{wch:10},{wch:20},{wch:35},{wch:14},{wch:14},
+    {wch:12},{wch:10},{wch:20},{wch:35},{wch:14},{wch:14},{wch:13},
     {wch:15},{wch:22},{wch:8},{wch:10},{wch:10},{wch:8},{wch:6},{wch:20}
   ];
   XLSX.utils.book_append_sheet(wb, ws, filterName);
@@ -2308,6 +2441,7 @@ function exportExcel() {
     '규격(BOM)': r.bomSpec,
     'BOM 추출 사이즈': r.bomSize || '',
     'Coord 추출 사이즈': r.coordSize || '',
+    '판정근거': r.basis || '',
     'Maker': r.bomMaker,
     'PCB Decal': r.decal,
     'Layer': r.layer,
@@ -2323,7 +2457,7 @@ function exportExcel() {
 
   // Column widths
   ws['!cols'] = [
-    {wch:12},{wch:10},{wch:20},{wch:35},{wch:14},{wch:14},
+    {wch:12},{wch:10},{wch:20},{wch:35},{wch:14},{wch:14},{wch:13},
     {wch:15},{wch:22},{wch:8},{wch:10},{wch:10},{wch:8},{wch:6},{wch:20}
   ];
 
@@ -2353,7 +2487,7 @@ function exportExcel() {
 
   // ── 상태별 시트 (데이터 있는 경우만 추가) ──────────────
   const colW = [
-    {wch:12},{wch:10},{wch:20},{wch:35},{wch:14},{wch:14},
+    {wch:12},{wch:10},{wch:20},{wch:35},{wch:14},{wch:14},{wch:13},
     {wch:15},{wch:22},{wch:8},{wch:10},{wch:10},{wch:8},{wch:6},{wch:20}
   ];
   const toRows = rows => rows.map(r => ({
@@ -2363,6 +2497,7 @@ function exportExcel() {
     '규격(BOM)': r.bomSpec,
     'BOM 추출 사이즈': r.bomSize || '',
     'Coord 추출 사이즈': r.coordSize || '',
+    '판정근거': r.basis || '',
     'Maker': r.bomMaker,
     'PCB Decal': r.decal,
     'Layer': r.layer,
@@ -3028,14 +3163,32 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
   </div>
   <div class="side-panel-body">
     <div class="history-item">
+      <div class="history-date">2026.07.09</div>
+      <div class="history-content">
+        <span class="history-tag tag-feat">기능</span>판정근거 컬럼 추가 — 각 행이 어떤 검증(칩사이즈/피치/패키지/Φ/OD/RT·AT)을 통과했는지 표시, Location만 비교된 행은 주황색 표시 (엑셀 내보내기에도 포함)<br>
+        <span class="history-tag tag-fix">FIX</span>피드백 전송 버전 하드코딩 수정 — APP_VERSION 상수로 일원화 (헤더·피드백 자동 동기화)<br>
+        <span class="history-tag tag-fix">FIX</span>미사용 코드(COORD_PITCH_ALT) 제거, 불일치 셀 툴팁 문구 개선(칩사이즈→규격)<br>
+        <span class="history-tag tag-feat">기능</span>선경(Φ) 비교 추가 — BOM "0.8PHI"·"14 PHI" ↔ Decal "PI0.8"·"PI14" 자동 비교 (점퍼·바리스터)<br>
+        <span class="history-tag tag-feat">기능</span>점퍼·바리스터 PI 누락 감지 — BOM에 PHI 있는데 Decal에 PI 없으면 확인필요 표시 (Φ0.6 점퍼는 예외)<br>
+        <span class="history-tag tag-feat">기능</span>점퍼 데칼 피치 확인 — JP 데칼에 피치 숫자 없으면 확인필요 표시<br>
+        <span class="history-tag tag-feat">기능</span>아일렛 OD 비교 — BOM "OD 1.6"·"OD2.0" ↔ EYELET(1.6)·서포터(EYELET-TYPE_OD2.0) 데칼 자동 비교<br>
+        <span class="history-tag tag-fix">FIX</span>좌표 Decal 피치 추출 확장 — 기존 _P15_ 형태만 인식하던 것을 _P15)·_P17.5(끝) 등 괄호·끝 형태까지 인식 (실비교 커버리지 확대)<br>
+        <span class="history-tag tag-feat">기능</span>RT/AT(Radial/Axial) 규격 자동 감지 — BOM 규격과 좌표 Decal의 RT/AT 불일치 자동 검출<br>
+        <span class="history-tag tag-feat">기능</span>피치 기반 판별 — RT: P5 통과 / AT: P9 이상 통과 / 그 외 피치 또는 피치 없으면 경고<br>
+        <span class="history-tag tag-ui">UI</span>불일치 표시 — RT→AT, AT→RT, P?(피치확인필요), 피치정보없음 등 상세 안내<br>
+        <span class="history-tag tag-ui">UI</span>BOM중복 필터 버튼에 개수 표시 통합 (별도 info 버튼 제거)<br>
+        <span class="history-tag tag-ui">UI</span>FAB 버튼 호버 시 텍스트 펼치기 — 평소엔 아이콘만 표시<br>
+        <span class="history-tag tag-feat">기능</span>FAQ 챗봇 전환 — Gemini API 제거 후 내장 FAQ 챗봇으로 운영<br>
+        <span class="history-tag tag-fix">FIX</span>const key 중복 선언 SyntaxError 수정 (toggleChat 함수)<br>
+        <span class="history-tag tag-fix">FIX</span>feedback-modal null 오류 수정 (addEventListener 조건 처리)
+      </div>
+    </div>
+    <div class="history-item">
       <div class="history-date">2026.06.25</div>
       <div class="history-content">
         <span class="history-tag tag-feat">기능</span>✨ Gemini AI 챗봇 연동 — Google Gemini 2.5 Flash 기반 AI 도우미 탑재<br>
-        <span class="history-tag tag-ui">UI</span>AI 도우미 FAB 버튼 및 채팅 패널 추가 (헤더에 Gemini AI 브랜딩)<br>
-        <span class="history-tag tag-feat">기능</span>챗봇 오류 처리 — 요청 한도(429)·서버 불안정(503)·키 오류 시 친절한 안내<br>
-        <span class="history-tag tag-feat">기능</span>FAQ 폴백 모드 — AI 연결 실패 시 기본 FAQ로 자동 전환<br>
-        <span class="history-tag tag-fix">FIX</span>const key 중복 선언 SyntaxError 수정 (toggleChat 함수)<br>
-        <span class="history-tag tag-fix">FIX</span>feedback-modal null 오류 수정 (addEventListener 조건 처리)
+        <span class="history-tag tag-ui">UI</span>AI 도우미 FAB 버튼 및 채팅 패널 추가<br>
+        <span class="history-tag tag-feat">기능</span>챗봇 오류 처리 — 요청 한도(429)·서버 불안정(503)·키 오류 시 친절한 안내
       </div>
     </div>
     <div class="history-item">
@@ -3568,6 +3721,9 @@ function restoreColSettings(side) {
     cfgEl.addEventListener('change', saveSettings);
     cfgEl.addEventListener('input',  saveSettings);
   }
+  // 앱 버전 표시 (APP_VERSION 한 곳에서 관리)
+  const verEl = document.getElementById('app-version');
+  if (verEl) verEl.textContent = APP_VERSION;
 })();
 // ※ loadLang / applyLang 은 STRINGS 선언 이후 스크립트 끝에서 실행됨
 
@@ -3640,7 +3796,7 @@ ko: {
   fAll:'전체', fMatched:'✅ 매칭', fMismatch:'⚡ 규격불일치', fBomOnly:'❌ BOM만',
   fCoordOnly:'⚠️ 좌표만', fNc:'🚫 NC', fDup:'⚠ BOM중복',
   searchPh:'🔍 RefDes 검색...', btnSaveAll:'📥 전체 저장', btnSaveSel:'📤 선택 저장',
-  thStatus:'상태', thPartName:'품명 (BOM)', thSpec:'규격 (BOM)',
+  thStatus:'상태', thBasis:'판정근거', thPartName:'품명 (BOM)', thSpec:'규격 (BOM)',
   emptyState:'BOM 파일과 좌표 데이터 파일을 업로드한 후 매칭을 실행하세요',
   previewTitle:'📋 변경 내용 미리보기', btnClose:'닫기', btnExcelDl:'📥 엑셀 다운로드',
   pwPrompt:'비밀번호를 입력하세요', pwWrong:'❌ 비밀번호가 틀렸습니다',
@@ -3727,7 +3883,7 @@ en: {
   fAll:'All', fMatched:'✅ Matched', fMismatch:'⚡ Mismatch', fBomOnly:'❌ BOM Only',
   fCoordOnly:'⚠️ Coord Only', fNc:'🚫 NC', fDup:'⚠ BOM Dup',
   searchPh:'🔍 Search RefDes...', btnSaveAll:'📥 Save All', btnSaveSel:'📤 Save Selected',
-  thStatus:'Status', thPartName:'Part Name (BOM)', thSpec:'Spec (BOM)',
+  thStatus:'Status', thBasis:'Verified By', thPartName:'Part Name (BOM)', thSpec:'Spec (BOM)',
   emptyState:'Upload BOM file and Coordinate data file, then run matching',
   previewTitle:'📋 Change Preview', btnClose:'Close', btnExcelDl:'📥 Download Excel',
   pwPrompt:'Enter password', pwWrong:'❌ Wrong password',
@@ -3814,7 +3970,7 @@ zh: {
   fAll:'全部', fMatched:'✅ 匹配', fMismatch:'⚡ 规格不符', fBomOnly:'❌ 仅BOM',
   fCoordOnly:'⚠️ 仅坐标', fNc:'🚫 NC', fDup:'⚠ BOM重复',
   searchPh:'🔍 搜索RefDes...', btnSaveAll:'📥 全部保存', btnSaveSel:'📤 选择保存',
-  thStatus:'状态', thPartName:'品名(BOM)', thSpec:'规格(BOM)',
+  thStatus:'状态', thBasis:'判定依据', thPartName:'品名(BOM)', thSpec:'规格(BOM)',
   emptyState:'上传BOM文件和坐标数据文件后执行匹配',
   previewTitle:'📋 变更预览', btnClose:'关闭', btnExcelDl:'📥 下载Excel',
   pwPrompt:'请输入密码', pwWrong:'❌ 密码错误',
@@ -3901,7 +4057,7 @@ ja: {
   fAll:'全件', fMatched:'✅ 一致', fMismatch:'⚡ 規格不一致', fBomOnly:'❌ BOMのみ',
   fCoordOnly:'⚠️ 座標のみ', fNc:'🚫 NC', fDup:'⚠ BOM重複',
   searchPh:'🔍 RefDes検索...', btnSaveAll:'📥 全件保存', btnSaveSel:'📤 選択保存',
-  thStatus:'ステータス', thPartName:'品名(BOM)', thSpec:'規格(BOM)',
+  thStatus:'ステータス', thBasis:'判定根拠', thPartName:'品名(BOM)', thSpec:'規格(BOM)',
   emptyState:'BOMファイルと座標データをアップロードしてマッチングを実行してください',
   previewTitle:'📋 変更内容プレビュー', btnClose:'閉じる', btnExcelDl:'📥 Excelダウンロード',
   pwPrompt:'パスワードを入力してください', pwWrong:'❌ パスワードが違います',
@@ -4130,9 +4286,9 @@ const CHAT_FAQ = [
   },
   {
     id:'mismatch',
-    keywords:['규격','불일치','mismatch','칩','사이즈','1608','2012','3216','피치','패키지','sod','sot'],
+    keywords:['규격','불일치','mismatch','칩','사이즈','1608','2012','3216','피치','패키지','sod','sot','rt','at','radial','axial','리드','관통','파이','phi','선경','od','아일렛','eyelet','점퍼','바리스터','판정','근거','location만'],
     chips:['BOM만 항목이란?','좌표만 항목이란?','엑셀 내보내기'],
-    answer:'⚡ <b>규격 불일치</b><br><br>BOM 규격과 좌표 Decal의 <b>칩 사이즈·피치·패키지</b>가 다를 때 표시됩니다.<br><br>예시:<br>· BOM: 1608 → 좌표: 2012 → ⚡ 불일치<br>· BOM: P5.0 → 좌표: P7.5 → ⚡ 불일치<br>· BOM: SOD-123 → 좌표: SOD-323 → ⚡ 불일치<br><br>불일치 셀은 분홍색으로 강조 표시됩니다.'
+    answer:'⚡ <b>규격 불일치</b><br><br>BOM 규격과 좌표 Decal의 규격이 다를 때 표시됩니다.<br><br>감지 항목:<br>· 칩 사이즈: BOM 1608 → 좌표 2012<br>· 피치: BOM P5.0 → 좌표 P7.5<br>· 패키지: BOM SOD-123 → 좌표 SOD-323<br>· RT/AT: BOM RT → 좌표 AT (Radial/Axial 불일치)<br>· 선경(Φ): BOM 0.8PHI·14 PHI → 좌표 PI0.8·PI14 (점퍼·바리스터)<br>· 아일렛 OD: BOM OD 1.6 → 좌표 EYELET(2.0)<br>· PI/피치 누락: 점퍼·바리스터 데칼에 PI나 피치 표기가 없으면 확인필요<br><br>RT/AT 판별 기준:<br>· RT(Radial): Decal에 RT 표기 또는 P5 피치<br>· AT(Axial): Decal에 AT 표기 또는 P9 이상 피치<br>· 피치 없으면 피치정보없음으로 표시<br><br><b>판정근거 컬럼</b>: 각 행이 어떤 검증(칩사이즈/피치/패키지/Φ선경/OD/RT·AT)을 통과했는지 표시합니다. <b>Location만</b>은 규격 정보를 추출할 수 없어 RefDes 존재 여부만 확인했다는 뜻이니 필요 시 직접 확인하세요.<br><br>불일치 셀은 분홍색으로 강조 표시됩니다.'
   },
   {
     id:'bom_only',
