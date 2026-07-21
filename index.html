@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BOM ↔ 아트웍 좌표 매칭 툴</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- xlsx-js-style: SheetJS 0.18.5 기반 + 셀 스타일(색상·테두리) 지원 포크 -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; color: #222; min-height: 100vh; }
@@ -577,18 +578,25 @@
 .cmp-section-hdr .arrow { font-size: 0.8rem; color: #999; transition: transform 0.2s; }
 .cmp-section-hdr.open .arrow { transform: rotate(90deg); }
 
-.cmp-table-wrap { display: none; overflow-x: auto; padding: 0 8px 8px; }
+.cmp-table-wrap { display: none; overflow: auto; padding: 0 8px 8px; max-height: 520px; }
 .cmp-table-wrap.open { display: block; }
 
 .cmp-tbl {
-  width: 100%; border-collapse: collapse; font-size: 0.84rem; margin-top: 4px;
+  width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 4px;
 }
 .cmp-tbl th {
-  background: #f5f5f5; padding: 8px 12px; text-align: left;
+  background: #f5f5f5; padding: 8px 10px; text-align: left;
   font-weight: 700; color: #444; border-bottom: 2px solid #e0e0e0;
   white-space: nowrap;
+  position: sticky; top: 0; z-index: 5;
 }
-.cmp-tbl td { padding: 7px 12px; border-bottom: 1px solid #f5f5f5; vertical-align: top; }
+.cmp-tbl td {
+  padding: 6px 10px; border-bottom: 1px solid #f5f5f5; vertical-align: top;
+  max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#tbody-added tr:nth-child(even) td,
+#tbody-deleted tr:nth-child(even) td,
+#tbody-daeche tr:nth-child(even) td { background: #fafafa; }
 .cmp-tbl tr:hover td { background: #fafbff; }
 .cell-del { color: #c62828; text-decoration: line-through; font-size: 0.8rem; }
 .cell-new { color: #2e7d32; font-size: 0.8rem; }
@@ -602,6 +610,19 @@
 }
 #btn-cmp-excel:hover { opacity: 0.88; }
 #cmp-results { display: none; }
+
+/* ── 사용법: 파일 포맷 예시 표 ── */
+.fmt-wrap { overflow-x: auto; margin: 8px 0 4px; border: 1px solid #e0e0e0; border-radius: 6px; }
+.fmt-tbl { border-collapse: collapse; font-size: 0.72rem; white-space: nowrap; }
+.fmt-tbl td { border: 1px solid #d7dbe4; padding: 3px 9px; background: white; }
+.fmt-tbl .xl-letter { background: #eceff3; color: #8a8f99; text-align: center; font-weight: 600; font-size: 0.66rem; min-width: 22px; }
+.fmt-tbl .xl-hdr { background: #dce6f1; font-weight: 700; color: #2c3e66; }
+.fmt-tbl .xl-note { color: #999; font-style: italic; }
+@keyframes usageFlash { 0% { background: #fff3bf; } 100% { background: transparent; } }
+.usage-flash { animation: usageFlash 1.6s ease-out; }
+[data-theme="dark"] .fmt-tbl td { background:#1e2138 !important; border-color:#2e3250 !important; }
+[data-theme="dark"] .fmt-tbl .xl-letter { background:#252840 !important; color:#7a83a8 !important; }
+[data-theme="dark"] .fmt-tbl .xl-hdr { background:#2a2f52 !important; color:#b0b8d0 !important; }
 
 /* ═══════════════════════════════════════════════════════════
    THEME SYSTEM  (v2026.06.25)
@@ -755,6 +776,9 @@
 [data-theme="dark"] .nc-toggle-btn           { background:#252840 !important; color:#7080a0 !important; border-color:#2e3250 !important; }
 [data-theme="dark"] .nc-toggle-btn.is-nc     { background:#37474f !important; color:#b0d8e0 !important; }
 [data-theme="dark"] .cmp-tbl th              { background:#252840 !important; color:#b0b8d0 !important; border-color:#2e3250 !important; }
+[data-theme="dark"] #tbody-added tr:nth-child(even) td,
+[data-theme="dark"] #tbody-deleted tr:nth-child(even) td,
+[data-theme="dark"] #tbody-daeche tr:nth-child(even) td { background:#20233c !important; }
 [data-theme="dark"] .cmp-tbl td              { border-color:#252840 !important; color:#c0c8d8 !important; }
 [data-theme="dark"] .cmp-tbl tr:hover td     { background:#252840 !important; }
 [data-theme="dark"] .cmp-section-hdr:hover   { background:#252840 !important; }
@@ -898,7 +922,7 @@
     <button id="theme-toggle-btn" onclick="openThemePicker(event)" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.9);border-radius:18px;padding:6px 14px;cursor:pointer;font-size:0.8rem;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.22)'" onmouseout="this.style.background='rgba(255,255,255,0.12)'" data-i18n="btnTheme">🎨 테마</button>
     <div style="width:1px;height:20px;background:rgba(255,255,255,0.2);margin:0 4px;"></div>
     <div style="text-align:right;opacity:0.7;font-size:0.78rem;line-height:1.6;">
-      <div style="font-weight:600;" id="app-version">v2026.07.09</div>
+      <div style="font-weight:600;" id="app-version">v2026.07.11</div>
       <div>JYH</div>
     </div>
   </div>
@@ -1215,7 +1239,7 @@
 // ─── State ───────────────────────────────────────────────
 let bomWorkbook = null, coordWorkbook = null;
 // ─── 앱 버전 (여기 한 곳만 수정하면 헤더·피드백에 자동 반영) ───
-const APP_VERSION = 'v2026.07.09';
+const APP_VERSION = 'v2026.07.11';
 
 let bomData = [], coordData = [];
 let allRows = [];
@@ -1302,8 +1326,16 @@ function checkSizeMatch(bomSpec, coordDecal) {
   const passed = [];
 
   // ★ RT/AT(Radial/Axial) 불일치 먼저 검사
-  const bomRA = detectRTAT(bomSpec);
+  let bomRA = detectRTAT(bomSpec);
   const crdRA = detectRTAT(coordDecal);
+
+  // ★ 비드(BEAD 데칼) 한정: BOM 문구 "RADIAL"→RT(P5), "AXIAL"→AT(P9 이상) 인식
+  //   (퓨즈 등 다른 부품엔 미적용, COAXIAL 오인 제외)
+  if (!bomRA && String(coordDecal || '').toUpperCase().includes('BEAD')) {
+    const _bs = String(bomSpec || '').toUpperCase();
+    if (_bs.includes('RADIAL')) bomRA = 'RT';
+    else if (_bs.includes('AXIAL') && !_bs.includes('COAXIAL')) bomRA = 'AT';
+  }
 
   if (bomRA === 'RT') {
     if (crdRA === 'AT') {
@@ -1906,6 +1938,21 @@ function openPanel(id) {
   document.getElementById('panel-'+id).classList.add('open');
   document.getElementById('side-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+  // 사용법: 버전 비교 탭에서 열면 해당 섹션으로 자동 스크롤 + 강조
+  if (id === 'usage') {
+    const body = document.querySelector('#panel-usage .side-panel-body');
+    if (body) body.scrollTop = 0;
+    const onCompare = document.getElementById('page-compare').style.display === 'block';
+    const target = document.getElementById('usage-compare-sec');
+    if (onCompare && target) {
+      setTimeout(() => {
+        target.scrollIntoView({behavior:'smooth', block:'start'});
+        target.classList.remove('usage-flash');
+        void target.offsetWidth;
+        target.classList.add('usage-flash');
+      }, 250);
+    }
+  }
 }
 function closePanel() {
   document.querySelectorAll('.side-panel').forEach(p=>p.classList.remove('open'));
@@ -2256,6 +2303,7 @@ function exportSelected() {
     {wch:12},{wch:10},{wch:20},{wch:35},{wch:14},{wch:14},{wch:13},
     {wch:15},{wch:22},{wch:8},{wch:10},{wch:10},{wch:8},{wch:6},{wch:20}
   ];
+  xlStyleResultSheet(ws, rows);
   XLSX.utils.book_append_sheet(wb, ws, '선택항목');
   const now = new Date();
   const ts = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
@@ -2362,6 +2410,7 @@ function exportFiltered() {
     {wch:12},{wch:10},{wch:20},{wch:35},{wch:14},{wch:14},{wch:13},
     {wch:15},{wch:22},{wch:8},{wch:10},{wch:10},{wch:8},{wch:6},{wch:20}
   ];
+  xlStyleResultSheet(ws, rows);
   XLSX.utils.book_append_sheet(wb, ws, filterName);
 
   const now = new Date();
@@ -2431,6 +2480,110 @@ function updateNcStats() {
   drawDonutChart(matched, mismatch, bomOnly, coordOnly, ncCount);
 }
 
+// ─── Excel 스타일 헬퍼 (xlsx-js-style) ─────────────────────
+const XL_STATUS_FILL = { mismatch:'FCE4EC', 'bom-only':'FFEBEE', 'coord-only':'FFF3E0', nc:'ECEFF1' };
+const XL_BORDER = {
+  top:{style:'thin',color:{rgb:'DDDDDD'}}, bottom:{style:'thin',color:{rgb:'DDDDDD'}},
+  left:{style:'thin',color:{rgb:'DDDDDD'}}, right:{style:'thin',color:{rgb:'DDDDDD'}}
+};
+const XL_HEADER_STYLE = {
+  fill:{fgColor:{rgb:'283593'}},
+  font:{bold:true,color:{rgb:'FFFFFF'},sz:11},
+  alignment:{horizontal:'center',vertical:'center'},
+  border:XL_BORDER
+};
+// 헤더 행 스타일 + 자동필터 (모든 시트 공용)
+function xlStyleHeader(ws) {
+  if (!ws || !ws['!ref']) return;
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let C = range.s.c; C <= range.e.c; C++) {
+    const cell = ws[XLSX.utils.encode_cell({r:range.s.r,c:C})];
+    if (cell) cell.s = XL_HEADER_STYLE;
+  }
+  ws['!autofilter'] = { ref: ws['!ref'] };
+  ws['!rows'] = ws['!rows'] || [];
+  ws['!rows'][0] = { hpt: 22 };
+}
+// 매칭결과형 시트 스타일: 헤더 + 상태별 행 색 + Location만 강조
+// rows: 시트 데이터와 같은 순서의 allRows 형식 배열
+function xlStyleResultSheet(ws, rows) {
+  if (!ws || !ws['!ref']) return;
+  xlStyleHeader(ws);
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  // 판정근거 컬럼 위치 탐색
+  let basisCol = -1;
+  for (let C = range.s.c; C <= range.e.c; C++) {
+    const h = ws[XLSX.utils.encode_cell({r:0,c:C})];
+    if (h && h.v === '판정근거') { basisCol = C; break; }
+  }
+  (rows || []).forEach((r, i) => {
+    const R = i + 1;
+    if (R > range.e.r) return;
+    const fill = XL_STATUS_FILL[r.status];
+    for (let C = range.s.c; C <= range.e.c; C++) {
+      const cell = ws[XLSX.utils.encode_cell({r:R,c:C})];
+      if (!cell) continue;
+      const s = { border: XL_BORDER };
+      if (fill) s.fill = { fgColor:{rgb:fill} };
+      if (C === basisCol && cell.v === 'Location만') {
+        s.fill = { fgColor:{rgb:'FFE0B2'} };
+        s.font = { color:{rgb:'E65100'}, bold:true };
+      }
+      cell.s = s;
+    }
+  });
+}
+// 요약형(구분/건수) 시트 스타일: 헤더 + 테두리 (자동필터 없음)
+function xlStyleSummary(ws) {
+  if (!ws || !ws['!ref']) return;
+  const rg = XLSX.utils.decode_range(ws['!ref']);
+  for (let R = rg.s.r; R <= rg.e.r; R++) for (let C = rg.s.c; C <= rg.e.c; C++) {
+    const cell = ws[XLSX.utils.encode_cell({r:R,c:C})];
+    if (cell) cell.s = R === 0 ? XL_HEADER_STYLE : { border: XL_BORDER };
+  }
+  ws['!rows'] = ws['!rows'] || [];
+  ws['!rows'][0] = { hpt: 22 };
+}
+// BOM 원본형 시트 스타일: 검증결과 컬럼 값 기준 행 색
+const XL_RESULT_FILL = { '규격불일치':'FCE4EC', 'BOM만':'FFEBEE', '좌표만':'FFF3E0' };
+function xlStyleBomSheet(ws) {
+  if (!ws || !ws['!ref']) return;
+  xlStyleHeader(ws);
+  const rg = XLSX.utils.decode_range(ws['!ref']);
+  let vCol = -1;
+  for (let C = rg.s.c; C <= rg.e.c; C++) {
+    const h = ws[XLSX.utils.encode_cell({r:0,c:C})];
+    if (h && h.v === '검증결과') { vCol = C; break; }
+  }
+  if (vCol < 0) return;
+  for (let R = 1; R <= rg.e.r; R++) {
+    const vCell = ws[XLSX.utils.encode_cell({r:R,c:vCol})];
+    const fill = vCell ? XL_RESULT_FILL[vCell.v] : null;
+    if (!fill) continue;
+    for (let C = rg.s.c; C <= rg.e.c; C++) {
+      const cell = ws[XLSX.utils.encode_cell({r:R,c:C})];
+      if (cell) cell.s = { fill:{fgColor:{rgb:fill}}, border: XL_BORDER };
+    }
+  }
+}
+
+// 열 너비 자동 계산 (내용 길이 기반, 한글·한자는 2칸 처리)
+function xlAutoCols(ws, maxW = 45) {
+  if (!ws || !ws['!ref']) return;
+  const rg = XLSX.utils.decode_range(ws['!ref']);
+  const wlen = s => [...String(s)].reduce((a,ch)=>a+(/[\u1100-\uFFDC]/.test(ch)?2:1),0);
+  const cols = [];
+  for (let C = rg.s.c; C <= rg.e.c; C++) {
+    let w = 8;
+    for (let R = rg.s.r; R <= rg.e.r; R++) {
+      const cell = ws[XLSX.utils.encode_cell({r:R,c:C})];
+      if (cell && cell.v !== undefined) w = Math.max(w, wlen(cell.v) + 2);
+    }
+    cols.push({wch: Math.min(w, maxW)});
+  }
+  ws['!cols'] = cols;
+}
+
 // ─── Export to Excel ──────────────────────────────────────
 function exportExcel() {
   const statusKo = t('statusLabels');
@@ -2460,6 +2613,7 @@ function exportExcel() {
     {wch:12},{wch:10},{wch:20},{wch:35},{wch:14},{wch:14},{wch:13},
     {wch:15},{wch:22},{wch:8},{wch:10},{wch:10},{wch:8},{wch:6},{wch:20}
   ];
+  xlStyleResultSheet(ws, allRows);
 
   XLSX.utils.book_append_sheet(wb, ws, '매칭결과');
 
@@ -2468,8 +2622,8 @@ function exportExcel() {
   const bomOnly   = allRows.filter(r=>r.status==='bom-only').length;
   const coordOnly = allRows.filter(r=>r.status==='coord-only').length;
   const ncOnlyEx  = allRows.filter(r=>r.status==='nc').length;
-  const totalBom  = matched + bomOnly;
   const mismatches = allRows.filter(r=>r.status==='mismatch').length;
+  const totalBom  = matched + mismatches + bomOnly; // 규격불일치도 BOM RefDes에 포함
   const summaryData = [
     ['구분','건수'],
     ['BOM 전체 RefDes', totalBom],
@@ -2482,7 +2636,8 @@ function exportExcel() {
     ['규격 완전 일치율', totalBom ? (matched/totalBom*100).toFixed(1)+'%' : '-']
   ];
   const ws2 = XLSX.utils.aoa_to_sheet(summaryData);
-  ws2['!cols'] = [{wch:25},{wch:12}];
+  ws2['!cols'] = [{wch:32},{wch:14}];
+  xlStyleSummary(ws2);
   XLSX.utils.book_append_sheet(wb, ws2, '요약');
 
   // ── 상태별 시트 (데이터 있는 경우만 추가) ──────────────
@@ -2511,6 +2666,7 @@ function exportExcel() {
     if (!rows.length) return;
     const wsS = XLSX.utils.json_to_sheet(toRows(rows));
     wsS['!cols'] = colW;
+    xlStyleResultSheet(wsS, rows);
     XLSX.utils.book_append_sheet(wb, wsS, name);
   };
   addSheet('규격불일치', allRows.filter(r => r.status === 'mismatch'));
@@ -2635,6 +2791,8 @@ function exportWithOptions() {
   // 원본 시트 — bomData 그대로
   if (beforeAfter) {
     const wsOrig = XLSX.utils.json_to_sheet(bomData.map(row=>({...row, '검증결과':bomRowStatus(row)})));
+    xlStyleBomSheet(wsOrig);
+    xlAutoCols(wsOrig);
     XLSX.utils.book_append_sheet(wb, wsOrig, '원본');
   }
 
@@ -2674,6 +2832,8 @@ function exportWithOptions() {
   outRows = outRows.map(row => ({...row, '검증결과': bomRowStatus(row)}));
 
   const wsMain = XLSX.utils.json_to_sheet(outRows);
+  xlStyleBomSheet(wsMain);
+  xlAutoCols(wsMain);
   XLSX.utils.book_append_sheet(wb, wsMain, beforeAfter?'수정본':'매칭결과');
 
   if (mismatchRpt) {
@@ -2689,17 +2849,21 @@ function exportWithOptions() {
           '불일치내용': hit?(hit.bomSize&&hit.coordSize?hit.bomSize+'→'+hit.coordSize:'확인필요'):'',
         };
       }));
+      xlStyleHeader(ws);
+      xlAutoCols(ws);
       XLSX.utils.book_append_sheet(wb, ws, '불일치리포트');
     }
   }
   if (changeLog && changes.length>0) {
     const ws = XLSX.utils.json_to_sheet(changes);
     ws['!cols']=[{wch:15},{wch:12},{wch:30}];
+    xlStyleHeader(ws);
     XLSX.utils.book_append_sheet(wb, ws, '변경이력');
   }
   if (accessSheet && accessoryItems.length>0) {
     const ws = XLSX.utils.json_to_sheet(accessoryItems.map(a=>({'Location(FOR...)':a.location,'품명':a.name,'규격':a.spec,'Maker':a.maker})));
     ws['!cols']=[{wch:30},{wch:20},{wch:35},{wch:15}];
+    xlStyleHeader(ws);
     XLSX.utils.book_append_sheet(wb, ws, '부속품');
   }
 
@@ -2708,6 +2872,7 @@ function exportWithOptions() {
   const totalBom=matched+mismatch+bomOnly;
   const wsS = XLSX.utils.aoa_to_sheet([['구분','건수'],['BOM 전체 RefDes',totalBom],['매칭 성공',matched],['규격 불일치',mismatch],['BOM만 있음',bomOnly],['좌표만 있음',coordOnly],['부속품(FOR...)',accessoryItems.length],['RefDes 매칭률',totalBom?((matched+mismatch)/totalBom*100).toFixed(1)+'%':'-'],['규격 완전 일치율',totalBom?(matched/totalBom*100).toFixed(1)+'%':'-'],[''],['적용 옵션',''],['BOM only 삭제',delBomOnly?'✓':''],['좌표 only 추가',addCoordOnly?'✓':''],['중복 제거',delDup?'✓':'']]);
   wsS['!cols']=[{wch:25},{wch:12}];
+  xlStyleSummary(wsS);
   XLSX.utils.book_append_sheet(wb, wsS, '요약');
 
   const now=new Date(); const ts=`${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
@@ -2862,6 +3027,12 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
         <div class="filename" id="cmp-old-name"></div>
         <input type="file" id="cmp-old-input" accept=".xlsx,.xls" onchange="loadCmpFile('old',this)">
       </div>
+      <div class="sheet-selector" id="cmp-old-sheet-wrap">
+        <label data-i18n="sheetSelect">📊 시트 선택</label>
+        <select id="cmp-old-sheet" onchange="parseCmpSheet('old')"></select>
+        <label style="margin-top:8px;" data-i18n="cmpHdrRow">헤더 행 번호 (1부터)</label>
+        <input type="number" id="cmp-old-hdr" value="1" min="1" style="width:100%;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;" onchange="parseCmpSheet('old')">
+      </div>
     </div>
     <!-- 신버전 -->
     <div class="upload-card" id="cmp-new-card">
@@ -2871,6 +3042,12 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
         <p>신버전 BOM 엑셀 파일을 올려주세요</p>
         <div class="filename" id="cmp-new-name"></div>
         <input type="file" id="cmp-new-input" accept=".xlsx,.xls" onchange="loadCmpFile('new',this)">
+      </div>
+      <div class="sheet-selector" id="cmp-new-sheet-wrap">
+        <label data-i18n="sheetSelect">📊 시트 선택</label>
+        <select id="cmp-new-sheet" onchange="parseCmpSheet('new')"></select>
+        <label style="margin-top:8px;" data-i18n="cmpHdrRow">헤더 행 번호 (1부터)</label>
+        <input type="number" id="cmp-new-hdr" value="1" min="1" style="width:100%;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:0.85rem;" onchange="parseCmpSheet('new')">
       </div>
     </div>
   </div>
@@ -2900,6 +3077,8 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
 
   <!-- 결과 영역 -->
   <div id="cmp-results">
+    <!-- 비교 알림 (자동 제외 열·중복 RefDes) -->
+    <div id="cmp-notice" style="display:none;background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:0.82rem;color:#795548;line-height:1.8;"></div>
     <!-- 요약 카드 -->
     <div class="cmp-summary-grid">
       <div class="cmp-sum-card added">
@@ -2916,8 +3095,9 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
       </div>
     </div>
 
-    <!-- 엑셀 다운로드 -->
-    <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+    <!-- 검색 + 엑셀 다운로드 -->
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+      <input id="cmp-search" class="search-box" style="margin-left:0;width:250px;" placeholder="🔍 RefDes·내용 검색" oninput="filterCmpTables()">
       <button id="btn-cmp-excel" onclick="exportCmpExcel()">📥 비교 결과 엑셀 다운로드</button>
     </div>
 
@@ -2962,6 +3142,21 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
         <table class="cmp-tbl">
           <thead><tr><th>RefDes</th><th>변경 항목</th><th>구버전</th><th>→</th><th>신버전</th></tr></thead>
           <tbody id="tbody-changed"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 대체품 변경 -->
+    <div class="cmp-result-section">
+      <div class="cmp-section-hdr" onclick="toggleCmpSection(this,'tbl-daeche')">
+        <h3>🔁 대체품 변경 <small style="color:#888;font-weight:400;">(품번 기준)</small></h3>
+        <span class="cmp-badge" id="badge-daeche" style="background:#8e24aa;">0</span>
+        <span class="arrow">▶</span>
+      </div>
+      <div class="cmp-table-wrap" id="tbl-daeche">
+        <table class="cmp-tbl">
+          <thead><tr><th>구분</th><th>품번</th><th>품명</th><th>규격</th><th>Maker</th><th>변경내용</th></tr></thead>
+          <tbody id="tbody-daeche"></tbody>
         </table>
       </div>
     </div>
@@ -3051,6 +3246,27 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
         <li>열 이름 설정 — Location, 품명, 규격, Maker, 수량</li>
         <li>▶ 매칭 시작 클릭</li>
       </ol>
+      <p style="font-size:0.85rem;color:#555;font-weight:600;margin-top:14px;">📄 BOM 파일 포맷 예시 <span style="font-weight:400;color:#999;">(1행 = 헤더)</span></p>
+      <div class="fmt-wrap"><table class="fmt-tbl">
+        <tr><td class="xl-letter"></td><td class="xl-letter">A</td><td class="xl-letter">B</td><td class="xl-letter">C</td><td class="xl-letter">D</td><td class="xl-letter">E</td><td class="xl-letter">F</td><td class="xl-letter">G</td><td class="xl-letter">H</td></tr>
+        <tr><td class="xl-letter">1</td><td class="xl-hdr">단계</td><td class="xl-hdr">Location</td><td class="xl-hdr">품 번</td><td class="xl-hdr">품 명</td><td class="xl-hdr">규 격</td><td class="xl-hdr">단위</td><td class="xl-hdr">단위수량</td><td class="xl-hdr">Maker</td></tr>
+        <tr><td class="xl-letter">2</td><td>....4</td><td>CX801S,CX802S</td><td>2203633</td><td>CAP-FILM,X</td><td>275VAC,0.33uF,K,BST(P15.0)</td><td>EA</td><td>2</td><td>SAMWHA</td></tr>
+        <tr><td class="xl-letter">3</td><td>대체품</td><td></td><td>2203633-A</td><td>CAP-FILM,X</td><td>275VAC,0.33uF,K,BST(P15.0)</td><td>EA</td><td>0</td><td>PILKOR</td></tr>
+        <tr><td class="xl-letter">4</td><td>....4</td><td>FOR CP810S</td><td>2400551</td><td>EL CAP COVER</td><td>AL 0.2T,12.5PHI,MINI</td><td>EA</td><td>1</td><td>DAEHO</td></tr>
+      </table></div>
+      <ul style="margin-top:6px;">
+        <li>Location에 <b>쉼표로 여러 RefDes</b> 입력 가능 (CX801S,CX802S → 각각 매칭)</li>
+        <li>단계가 <b>대체품</b>인 행(Location 비움) → 대체품으로 자동 분류</li>
+        <li>Location이 <b>FOR ...</b>로 시작하면 부속품으로 자동 분류</li>
+      </ul>
+      <p style="font-size:0.85rem;color:#555;font-weight:600;margin-top:14px;">📄 좌표 데이터 포맷 예시 <span style="font-weight:400;color:#999;">(타이틀 행이 있으면 헤더 행 번호를 맞춰주세요 — 아래 예시는 3행)</span></p>
+      <div class="fmt-wrap"><table class="fmt-tbl">
+        <tr><td class="xl-letter"></td><td class="xl-letter">A</td><td class="xl-letter">B</td><td class="xl-letter">C</td><td class="xl-letter">D</td><td class="xl-letter">E</td><td class="xl-letter">F</td><td class="xl-letter">G</td><td class="xl-letter">H</td></tr>
+        <tr><td class="xl-letter">1</td><td class="xl-note" colspan="8">Test-report for L55S7_HVD_REV0.3 ...</td></tr>
+        <tr><td class="xl-letter">2</td><td colspan="8"></td></tr>
+        <tr><td class="xl-letter">3</td><td class="xl-hdr">RefDes</td><td class="xl-hdr">PCB Decal</td><td class="xl-hdr">Pins</td><td class="xl-hdr">Layer</td><td class="xl-hdr">Orient</td><td class="xl-hdr">Position X</td><td class="xl-hdr">Position Y</td><td class="xl-hdr">Part Type</td></tr>
+        <tr><td class="xl-letter">4</td><td>CX801S</td><td>CAP-FILM(18X8_P15)</td><td>2</td><td>Top</td><td>90</td><td>42.15</td><td>67.4</td><td>CAP-FILM</td></tr>
+      </table></div>
     </div>
     <div class="sp-section">
       <h3>🎨 결과 색상 의미</h3>
@@ -3105,25 +3321,38 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
         <li>엑셀 다운로드 시 원본 BOM 서식 유지 + 검증결과 컬럼 추가</li>
       </ul>
     </div>
-    <div class="sp-section" style="border-top:2px solid #e8eaf6;margin-top:8px;padding-top:16px;">
+    <div class="sp-section" id="usage-compare-sec" style="border-top:2px solid #e8eaf6;margin-top:8px;padding-top:16px;">
       <h3>📊 BOM 버전 비교 사용법</h3>
       <ol>
         <li>상단 탭에서 <strong>📊 BOM 버전 비교</strong> 클릭</li>
         <li><strong>구버전 BOM</strong>과 <strong>신버전 BOM</strong> 파일 각각 업로드</li>
-        <li>두 파일 업로드 완료 시 감지된 열 목록 자동 표시</li>
+        <li>업로드 후 <strong>시트 선택</strong>과 <strong>헤더 행 번호</strong>(1부터) 확인 — 표지 시트가 있는 BOM도 정확히 읽을 수 있습니다</li>
         <li><strong>RefDes 열 이름</strong> 확인 (기본값: Location)</li>
         <li>비교에서 제외할 열이 있으면 쉼표로 구분하여 입력<br>
-            <span style="color:#888;font-size:0.82rem;">예: 단계, Maker</span></li>
+            <span style="color:#888;font-size:0.82rem;">예: 단계, Maker · 한쪽 파일에만 있는 열은 자동 제외되고 알림으로 표시됩니다</span></li>
         <li><strong>🔍 버전 비교 실행</strong> 클릭</li>
+        <li>결과가 많으면 상단 <strong>🔍 검색창</strong>으로 RefDes·내용 필터</li>
       </ol>
       <div style="margin-top:10px;">
         <p style="font-size:0.85rem;color:#555;font-weight:600;">비교 결과 항목:</p>
         <ul style="margin-top:4px;">
           <li><span style="color:#2e7d32;font-weight:700;">➕ 추가</span> — 신버전에만 있는 RefDes</li>
           <li><span style="color:#c62828;font-weight:700;">➖ 삭제</span> — 구버전에만 있는 RefDes</li>
-          <li><span style="color:#e65100;font-weight:700;">🔄 변경</span> — 같은 RefDes이지만 열 값이 달라진 항목</li>
+          <li><span style="color:#e65100;font-weight:700;">🔄 변경</span> — 같은 RefDes이지만 열 값이 달라진 항목 (3 vs 3.0 같은 숫자 표기 차이는 무시)</li>
+          <li><span style="color:#8e24aa;font-weight:700;">🔁 대체품 변경</span> — 단계=대체품 행을 품번 기준으로 비교 (추가/삭제/변경)</li>
         </ul>
       </div>
+      <p style="font-size:0.85rem;color:#555;font-weight:600;margin-top:14px;">📄 BOM 파일 포맷 예시 <span style="font-weight:400;color:#999;">(구버전·신버전 동일 포맷, 1행 = 헤더)</span></p>
+      <div class="fmt-wrap"><table class="fmt-tbl">
+        <tr><td class="xl-letter"></td><td class="xl-letter">A</td><td class="xl-letter">B</td><td class="xl-letter">C</td><td class="xl-letter">D</td><td class="xl-letter">E</td><td class="xl-letter">F</td><td class="xl-letter">G</td><td class="xl-letter">H</td></tr>
+        <tr><td class="xl-letter">1</td><td class="xl-hdr">단계</td><td class="xl-hdr">Location</td><td class="xl-hdr">품 번</td><td class="xl-hdr">품 명</td><td class="xl-hdr">규 격</td><td class="xl-hdr">단위</td><td class="xl-hdr">단위수량</td><td class="xl-hdr">Maker</td></tr>
+        <tr><td class="xl-letter">2</td><td>....4</td><td>CX801S,CX802S</td><td>2203633</td><td>CAP-FILM,X</td><td>275VAC,0.33uF,K,BST(P15.0)</td><td>EA</td><td>2</td><td>SAMWHA</td></tr>
+        <tr><td class="xl-letter">3</td><td>대체품</td><td></td><td>2203633-A</td><td>CAP-FILM,X</td><td>275VAC,0.33uF,K,BST(P15.0)</td><td>EA</td><td>0</td><td>PILKOR</td></tr>
+      </table></div>
+      <ul style="margin-top:6px;">
+        <li>RefDes 열(Location)은 쉼표로 여러 개 입력 가능 — RefDes 단위로 분리해서 비교합니다</li>
+        <li>헤더가 1행이 아니면 <b>헤더 행 번호</b>를 맞춰주세요</li>
+      </ul>
     </div>
     <div class="sp-section" style="border-top:2px solid #e8eaf6;margin-top:8px;padding-top:16px;">
       <h3>💡 개선 제안 / 기능 요청</h3>
@@ -3163,16 +3392,30 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogo(); })
   </div>
   <div class="side-panel-body">
     <div class="history-item">
-      <div class="history-date">2026.07.09</div>
+      <div class="history-date">2026.07.11</div>
       <div class="history-content">
-        <span class="history-tag tag-feat">기능</span>판정근거 컬럼 추가 — 각 행이 어떤 검증(칩사이즈/피치/패키지/Φ/OD/RT·AT)을 통과했는지 표시, Location만 비교된 행은 주황색 표시 (엑셀 내보내기에도 포함)<br>
-        <span class="history-tag tag-fix">FIX</span>피드백 전송 버전 하드코딩 수정 — APP_VERSION 상수로 일원화 (헤더·피드백 자동 동기화)<br>
-        <span class="history-tag tag-fix">FIX</span>미사용 코드(COORD_PITCH_ALT) 제거, 불일치 셀 툴팁 문구 개선(칩사이즈→규격)<br>
         <span class="history-tag tag-feat">기능</span>선경(Φ) 비교 추가 — BOM "0.8PHI"·"14 PHI" ↔ Decal "PI0.8"·"PI14" 자동 비교 (점퍼·바리스터)<br>
         <span class="history-tag tag-feat">기능</span>점퍼·바리스터 PI 누락 감지 — BOM에 PHI 있는데 Decal에 PI 없으면 확인필요 표시 (Φ0.6 점퍼는 예외)<br>
         <span class="history-tag tag-feat">기능</span>점퍼 데칼 피치 확인 — JP 데칼에 피치 숫자 없으면 확인필요 표시<br>
         <span class="history-tag tag-feat">기능</span>아일렛 OD 비교 — BOM "OD 1.6"·"OD2.0" ↔ EYELET(1.6)·서포터(EYELET-TYPE_OD2.0) 데칼 자동 비교<br>
+        <span class="history-tag tag-feat">기능</span>판정근거 컬럼 추가 — 각 행이 어떤 검증(칩사이즈/피치/패키지/Φ/OD/RT·AT)을 통과했는지 표시, Location만 비교된 행은 주황색 표시 (엑셀 내보내기에도 포함)<br>
         <span class="history-tag tag-fix">FIX</span>좌표 Decal 피치 추출 확장 — 기존 _P15_ 형태만 인식하던 것을 _P15)·_P17.5(끝) 등 괄호·끝 형태까지 인식 (실비교 커버리지 확대)<br>
+        <span class="history-tag tag-fix">FIX</span>피드백 전송 버전 하드코딩 수정 — APP_VERSION 상수로 일원화 (헤더·피드백 자동 동기화)<br>
+        <span class="history-tag tag-fix">FIX</span>미사용 코드(COORD_PITCH_ALT) 제거, 불일치 셀 툴팁 문구 개선(칩사이즈→규격)<br>
+        <span class="history-tag tag-ui">UI</span>FAQ 챗봇 규격불일치 답변 갱신 — Φ선경·OD·PI누락·판정근거 설명 추가<br>
+        <span class="history-tag tag-feat">기능</span>엑셀 리포트 자동 서식 — 헤더 색상·자동필터, 상태별 행 색(불일치 분홍/BOM만 빨강/좌표만 주황/NC 회색), 판정근거 "Location만" 강조, 요약·수정본·버전비교 시트 포함<br>
+        <span class="history-tag tag-fix">FIX</span>엑셀 라이브러리 교체 — SheetJS → xlsx-js-style (셀 스타일 지원 포크, API 동일)<br>
+        <span class="history-tag tag-feat">기능</span>비드 RADIAL/AXIAL 문구 인식 — BEAD 데칼 한정, BOM "RADIAL"→RT(P5 확인)·"AXIAL"→AT(P9 이상 확인) 판정 (COAXIAL 오인 제외)<br>
+        <span class="history-tag tag-fix">FIX</span>엑셀 요약 시트 매칭률 100% 초과 버그 수정 — BOM 전체 RefDes 집계에 규격불일치 누락 (매칭률 102.4% → 정상 계산)<br>
+        <span class="history-tag tag-feat">기능</span>버전 비교 개선 ① 시트 선택·헤더 행 지정 ② 숫자 표기 차이(3 vs 3.0) 오탐 방지 ③ 한쪽에만 있는 열 자동 제외+알림 ④ 중복 RefDes 경고 ⑤ 결과 검색창 ⑥ 대체품 변경 추적(품번 기준, 별도 섹션+엑셀 시트)<br>
+        <span class="history-tag tag-ui">UI</span>버전 비교 가독성 개선 — 표 고정 헤더+세로 스크롤+줄무늬, 긴 값 말줄임(전체 값은 마우스 툴팁), 빈 헤더(__EMPTY) 열 자동 제외, 엑셀 열 너비 자동 조정(비교·수정본 내보내기 포함)<br>
+        <span class="history-tag tag-feat">기능</span>FAQ 챗봇 6항목 추가 — 판정근거/Location만, 대체품·부속품 처리, 비PCB 스킵, 매칭률 vs 일치율, 데이터 보안, 인터넷 필요 여부<br>
+        <span class="history-tag tag-ui">UI</span>사용법 개선 — 버전 비교 탭에서 열면 해당 섹션으로 자동 스크롤+강조, BOM·좌표 파일 포맷 예시 표(엑셀 1행 구성) 추가, 버전 비교 사용법 최신 기능 반영
+      </div>
+    </div>
+    <div class="history-item">
+      <div class="history-date">2026.07.09</div>
+      <div class="history-content">
         <span class="history-tag tag-feat">기능</span>RT/AT(Radial/Axial) 규격 자동 감지 — BOM 규격과 좌표 Decal의 RT/AT 불일치 자동 검출<br>
         <span class="history-tag tag-feat">기능</span>피치 기반 판별 — RT: P5 통과 / AT: P9 이상 통과 / 그 외 피치 또는 피치 없으면 경고<br>
         <span class="history-tag tag-ui">UI</span>불일치 표시 — RT→AT, AT→RT, P?(피치확인필요), 피치정보없음 등 상세 안내<br>
@@ -3358,37 +3601,44 @@ function switchTab(tab) {
   document.getElementById('tab-btn-compare').classList.toggle('active', tab==='compare');
 }
 
+let cmpOldWb = null, cmpNewWb = null;
+
 function loadCmpFile(side, input) {
   const file = input.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
     const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const data = XLSX.utils.sheet_to_json(ws, {defval:''});
-    if (side === 'old') {
-      cmpOldData = data;
-      document.getElementById('cmp-old-badge').textContent = data.length + '행';
-      document.getElementById('cmp-old-badge').style.background='#e8f5e9';
-      document.getElementById('cmp-old-badge').style.color='#2e7d32';
-      document.getElementById('cmp-old-name').textContent = file.name;
-      document.getElementById('cmp-old-drop').classList.add('has-file');
-      document.getElementById('cmp-old-card').classList.add('loaded');
-    } else {
-      cmpNewData = data;
-      document.getElementById('cmp-new-badge').textContent = data.length + '행';
-      document.getElementById('cmp-new-badge').style.background='#e8f5e9';
-      document.getElementById('cmp-new-badge').style.color='#2e7d32';
-      document.getElementById('cmp-new-name').textContent = file.name;
-      document.getElementById('cmp-new-drop').classList.add('has-file');
-      document.getElementById('cmp-new-card').classList.add('loaded');
-    }
-    if (cmpOldData && cmpNewData) {
-      document.getElementById('btn-run-cmp').disabled = false;
-      updateCmpColPreview();
-    }
+    if (side === 'old') cmpOldWb = wb; else cmpNewWb = wb;
+    // 시트 선택 목록 채우기 (기본: 첫 시트)
+    const sel = document.getElementById(`cmp-${side}-sheet`);
+    sel.innerHTML = wb.SheetNames.map((n,i)=>`<option value="${i}">${n}</option>`).join('');
+    document.getElementById(`cmp-${side}-sheet-wrap`).style.display = 'block';
+    document.getElementById(`cmp-${side}-name`).textContent = file.name;
+    document.getElementById(`cmp-${side}-drop`).classList.add('has-file');
+    parseCmpSheet(side);
   };
   reader.readAsArrayBuffer(file);
+}
+
+// 선택된 시트·헤더 행 기준으로 데이터 재파싱
+function parseCmpSheet(side) {
+  const wb = side === 'old' ? cmpOldWb : cmpNewWb;
+  if (!wb) return;
+  const sheetIdx = parseInt(document.getElementById(`cmp-${side}-sheet`).value || '0', 10);
+  const hdrRow = Math.max(1, parseInt(document.getElementById(`cmp-${side}-hdr`).value || '1', 10));
+  const ws = wb.Sheets[wb.SheetNames[sheetIdx]];
+  const data = XLSX.utils.sheet_to_json(ws, {defval:'', range: hdrRow - 1});
+  if (side === 'old') cmpOldData = data; else cmpNewData = data;
+  const badge = document.getElementById(`cmp-${side}-badge`);
+  badge.textContent = data.length + '행';
+  badge.style.background = '#e8f5e9';
+  badge.style.color = '#2e7d32';
+  document.getElementById(`cmp-${side}-card`).classList.add('loaded');
+  if (cmpOldData && cmpNewData) {
+    document.getElementById('btn-run-cmp').disabled = false;
+    updateCmpColPreview();
+  }
 }
 
 // 드래그앤드롭
@@ -3415,24 +3665,32 @@ function updateCmpColPreview() {
   const allCols = [...new Set([
     ...Object.keys(cmpOldData[0]||{}),
     ...Object.keys(cmpNewData[0]||{})
-  ])].filter(c => c !== locCol);
+  ])].filter(c => c !== locCol && !/^__EMPTY/.test(c));
   document.getElementById('cmp-col-list').textContent = allCols.join(' / ');
   document.getElementById('cmp-col-preview').style.display = 'block';
 }
+
+// 값 비교: 문자열 일치 또는 양쪽 다 숫자면 수치로 비교 (3 vs 3.0 오탐 방지)
+function cmpValEq(a, b) {
+  const s1 = String(a ?? '').trim(), s2 = String(b ?? '').trim();
+  if (s1 === s2) return true;
+  if (s1 !== '' && s2 !== '' && !isNaN(s1) && !isNaN(s2)) return parseFloat(s1) === parseFloat(s2);
+  return false;
+}
+
+let cmpDaecheRows = [];
 
 function runCompare() {
   const locCol = document.getElementById('cmp-loc-col').value.trim();
   const exclRaw = document.getElementById('cmp-excl-cols').value;
   const exclSet = new Set(exclRaw.split(',').map(s=>s.trim()).filter(Boolean));
 
-  // 비교할 열 목록: 두 파일 헤더 합집합에서 locCol·제외열 빼기
-  const allColsSet = new Set([
-    ...Object.keys(cmpOldData[0]||{}),
-    ...Object.keys(cmpNewData[0]||{})
-  ]);
-  allColsSet.delete(locCol);
-  exclSet.forEach(c => allColsSet.delete(c));
-  cmpAllCols = [...allColsSet];
+  // 비교할 열: 양쪽 파일에 모두 존재하는 열만 (한쪽에만 있는 열은 자동 제외 + 알림)
+  const oldCols = new Set(Object.keys(cmpOldData[0]||{}));
+  const newCols = new Set(Object.keys(cmpNewData[0]||{}));
+  const autoExcluded = [...new Set([...oldCols, ...newCols])]
+    .filter(c => !(oldCols.has(c) && newCols.has(c)) && c !== locCol && !exclSet.has(c) && !/^__EMPTY/.test(c));
+  cmpAllCols = [...oldCols].filter(c => newCols.has(c) && c !== locCol && !exclSet.has(c) && !/^__EMPTY/.test(c));
 
   // RefDes 분리 헬퍼
   const RPAT = /^[A-Za-z]{1,6}\d/;
@@ -3441,41 +3699,94 @@ function runCompare() {
     return String(raw).split(',').map(s=>s.trim()).filter(s=>RPAT.test(s));
   }
 
-  // 맵 빌드: {refdes → {cols:{열:값}, rawRow}}
-  function buildMap(data) {
+  // 맵 빌드: {REFDES(대문자) → {ref, cols, rawRow}} + 중복 RefDes 감지
+  function buildMap(data, dupOut) {
     const m = {};
     data.forEach(row => {
       splitRefs(row[locCol]).forEach(r => {
+        const key = r.toUpperCase();
+        if (m[key]) dupOut.add(r);
         const cols = {};
         cmpAllCols.forEach(c => cols[c] = String(row[c]||'').trim());
-        m[r] = { cols, rawRow: row };
+        m[key] = { ref: r, cols, rawRow: row };
       });
     });
     return m;
   }
 
-  const oldMap = buildMap(cmpOldData);
-  const newMap = buildMap(cmpNewData);
+  const dupOld = new Set(), dupNew = new Set();
+  const oldMap = buildMap(cmpOldData, dupOld);
+  const newMap = buildMap(cmpNewData, dupNew);
   const allKeys = new Set([...Object.keys(oldMap), ...Object.keys(newMap)]);
 
   cmpAddedRows=[]; cmpDeletedRows=[]; cmpChangedRows=[];
 
-  allKeys.forEach(r => {
-    const inOld = r in oldMap, inNew = r in newMap;
-    if (!inOld && inNew)  { cmpAddedRows.push({ref:r, cols:newMap[r].cols, raw:newMap[r].rawRow}); return; }
-    if (inOld && !inNew)  { cmpDeletedRows.push({ref:r, cols:oldMap[r].cols, raw:oldMap[r].rawRow}); return; }
-    // 둘 다 있음 → 모든 열 비교
-    const o=oldMap[r].cols, n=newMap[r].cols;
+  allKeys.forEach(k => {
+    const inOld = k in oldMap, inNew = k in newMap;
+    if (!inOld && inNew)  { cmpAddedRows.push({ref:newMap[k].ref, cols:newMap[k].cols, raw:newMap[k].rawRow}); return; }
+    if (inOld && !inNew)  { cmpDeletedRows.push({ref:oldMap[k].ref, cols:oldMap[k].cols, raw:oldMap[k].rawRow}); return; }
+    // 둘 다 있음 → 공통 열 비교 (숫자 정규화)
+    const o=oldMap[k].cols, n=newMap[k].cols;
     const diffs=[];
     cmpAllCols.forEach(col => {
-      if ((o[col]||'') !== (n[col]||'')) diffs.push({field:col, old:o[col]||'', new:n[col]||''});
+      if (!cmpValEq(o[col], n[col])) diffs.push({field:col, old:o[col]||'', new:n[col]||''});
     });
-    if (diffs.length) cmpChangedRows.push({ref:r, diffs});
+    if (diffs.length) cmpChangedRows.push({ref:oldMap[k].ref, diffs});
   });
+
+  // ── 대체품 변경 추적 (품번 기준) ──
+  cmpDaecheRows = [];
+  const normH = s => String(s).replace(/\s+/g,'');
+  function daecheMap(data) {
+    const m = {};
+    if (!data.length) return m;
+    const keys = Object.keys(data[0]);
+    const stepCol = keys.find(k => data.some(r => String(r[k]).trim() === '대체품'));
+    const pnCol   = keys.find(k => normH(k) === '품번');
+    if (!stepCol || !pnCol) return m;
+    const nameCol = keys.find(k => normH(k) === '품명');
+    const specCol = keys.find(k => normH(k) === '규격');
+    const mkCol   = keys.find(k => normH(k).toUpperCase() === 'MAKER');
+    data.forEach(r => {
+      if (String(r[stepCol]).trim() !== '대체품') return;
+      const pn = String(r[pnCol]||'').trim();
+      if (!pn) return;
+      m[pn] = { pn, name:String(r[nameCol]||'').trim(), spec:String(r[specCol]||'').trim(), maker:String(r[mkCol]||'').trim() };
+    });
+    return m;
+  }
+  const dOld = daecheMap(cmpOldData), dNew = daecheMap(cmpNewData);
+  new Set([...Object.keys(dOld), ...Object.keys(dNew)]).forEach(pn => {
+    const o = dOld[pn], n = dNew[pn];
+    if (!o && n) cmpDaecheRows.push({type:'추가', ...n, diff:''});
+    else if (o && !n) cmpDaecheRows.push({type:'삭제', ...o, diff:''});
+    else if (o && n) {
+      const diffs = [];
+      if (o.name !== n.name)         diffs.push(`품명: ${o.name} → ${n.name}`);
+      if (!cmpValEq(o.spec, n.spec)) diffs.push(`규격: ${o.spec} → ${n.spec}`);
+      if (o.maker !== n.maker)       diffs.push(`Maker: ${o.maker} → ${n.maker}`);
+      if (diffs.length) cmpDaecheRows.push({type:'변경', pn, name:n.name, spec:n.spec, maker:n.maker, diff:diffs.join(' / ')});
+    }
+  });
+  cmpDaecheRows.sort((a,b)=>a.pn.localeCompare(b.pn, undefined, {numeric:true}));
 
   // 정렬 (RefDes 알파벳+숫자순)
   const sortRef = arr => arr.sort((a,b)=>a.ref.localeCompare(b.ref, undefined, {numeric:true}));
   sortRef(cmpAddedRows); sortRef(cmpDeletedRows); sortRef(cmpChangedRows);
+
+  // ── 알림: 자동 제외된 열 · 중복 RefDes ──
+  const notices = [];
+  if (autoExcluded.length)
+    notices.push(`⚠️ 한쪽 파일에만 있는 열이라 비교에서 자동 제외됨: <b>${autoExcluded.join(', ')}</b>`);
+  if (dupOld.size || dupNew.size)
+    notices.push(`⚠️ 중복 RefDes 발견 (마지막 행 기준으로 비교됨) — 구버전: <b>${[...dupOld].join(', ')||'없음'}</b> / 신버전: <b>${[...dupNew].join(', ')||'없음'}</b>`);
+  const noticeEl = document.getElementById('cmp-notice');
+  if (notices.length) { noticeEl.innerHTML = notices.join('<br>'); noticeEl.style.display='block'; }
+  else noticeEl.style.display='none';
+
+  // 검색창 초기화
+  const searchEl = document.getElementById('cmp-search');
+  if (searchEl) searchEl.value = '';
 
   // 카운트 업데이트
   document.getElementById('cnt-added').textContent   = cmpAddedRows.length;
@@ -3484,6 +3795,7 @@ function runCompare() {
   document.getElementById('badge-added').textContent   = cmpAddedRows.length;
   document.getElementById('badge-deleted').textContent = cmpDeletedRows.length;
   document.getElementById('badge-changed').textContent = cmpChangedRows.length;
+  document.getElementById('badge-daeche').textContent  = cmpDaecheRows.length;
 
   // 추가/삭제 테이블 헤더 동적 생성
   const colThs = cmpAllCols.map(c=>`<th>${c}</th>`).join('');
@@ -3494,14 +3806,14 @@ function runCompare() {
   // 추가된 부품 렌더
   document.getElementById('tbody-added').innerHTML =
     cmpAddedRows.length ? cmpAddedRows.map(r=>
-      `<tr><td><b>${r.ref}</b></td>${cmpAllCols.map(c=>`<td>${r.cols[c]||''}</td>`).join('')}</tr>`
-    ).join('') : `<tr><td colspan="${ncols}" style="text-align:center;color:#888;padding:20px;">추가된 부품 없음</td></tr>`;
+      `<tr><td><b>${r.ref}</b></td>${cmpAllCols.map(c=>`<td title="${String(r.cols[c]||'').replace(/"/g,'&quot;')}">${r.cols[c]||''}</td>`).join('')}</tr>`
+    ).join('') : `<tr><td colspan="${ncols}" style="text-align:center;color:#888;padding:20px;">${t('cmpNoAdded')}</td></tr>`;
 
   // 삭제된 부품 렌더
   document.getElementById('tbody-deleted').innerHTML =
     cmpDeletedRows.length ? cmpDeletedRows.map(r=>
-      `<tr><td><b>${r.ref}</b></td>${cmpAllCols.map(c=>`<td>${r.cols[c]||''}</td>`).join('')}</tr>`
-    ).join('') : `<tr><td colspan="${ncols}" style="text-align:center;color:#888;padding:20px;">삭제된 부품 없음</td></tr>`;
+      `<tr><td><b>${r.ref}</b></td>${cmpAllCols.map(c=>`<td title="${String(r.cols[c]||'').replace(/"/g,'&quot;')}">${r.cols[c]||''}</td>`).join('')}</tr>`
+    ).join('') : `<tr><td colspan="${ncols}" style="text-align:center;color:#888;padding:20px;">${t('cmpNoDeleted')}</td></tr>`;
 
   // 변경된 부품 렌더
   document.getElementById('tbody-changed').innerHTML =
@@ -3515,11 +3827,18 @@ function runCompare() {
           <td class="cell-new">${d.new||'(없음)'}</td>
         </tr>`
       ).join('')
-    ).join('') : '<tr><td colspan="5" style="text-align:center;color:#888;padding:20px;">변경된 부품 없음</td></tr>';
+    ).join('') : `<tr><td colspan="5" style="text-align:center;color:#888;padding:20px;">${t('cmpNoChanged')}</td></tr>`;
+
+  // 대체품 변경 렌더
+  const dcColor = {추가:'#43a047', 삭제:'#e53935', 변경:'#f57c00'};
+  document.getElementById('tbody-daeche').innerHTML =
+    cmpDaecheRows.length ? cmpDaecheRows.map(d=>
+      `<tr><td><span style="color:${dcColor[d.type]};font-weight:700;">${d.type}</span></td><td><b>${d.pn}</b></td><td>${d.name}</td><td>${d.spec}</td><td>${d.maker}</td><td>${d.diff||''}</td></tr>`
+    ).join('') : `<tr><td colspan="6" style="text-align:center;color:#888;padding:20px;">${t('cmpNoDaeche')}</td></tr>`;
 
   // 결과 있으면 자동으로 섹션 펼치기
-  ['added','deleted','changed'].forEach(type => {
-    const cnt = {added:cmpAddedRows.length,deleted:cmpDeletedRows.length,changed:cmpChangedRows.length}[type];
+  ['added','deleted','changed','daeche'].forEach(type => {
+    const cnt = {added:cmpAddedRows.length,deleted:cmpDeletedRows.length,changed:cmpChangedRows.length,daeche:cmpDaecheRows.length}[type];
     const hdr = document.getElementById('tbl-'+type).previousElementSibling;
     const wrap = document.getElementById('tbl-'+type);
     if (cnt > 0) { hdr.classList.add('open'); wrap.classList.add('open'); }
@@ -3528,6 +3847,34 @@ function runCompare() {
 
   document.getElementById('cmp-results').style.display = 'block';
   document.getElementById('cmp-results').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// ── 비교 결과 검색 필터 ──
+function filterCmpTables() {
+  const q = (document.getElementById('cmp-search').value || '').toLowerCase();
+  // 일반 테이블: 행 단위 필터
+  ['tbody-added','tbody-deleted','tbody-daeche'].forEach(id => {
+    const tb = document.getElementById(id);
+    if (!tb) return;
+    [...tb.rows].forEach(tr => {
+      tr.style.display = !q || tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+  // 변경 테이블: RefDes 그룹(rowspan) 단위 필터
+  const tb = document.getElementById('tbody-changed');
+  if (!tb) return;
+  let group = [];
+  const flush = () => {
+    if (!group.length) return;
+    const txt = group.map(r=>r.textContent).join(' ').toLowerCase();
+    const show = !q || txt.includes(q);
+    group.forEach(r => r.style.display = show ? '' : 'none');
+  };
+  [...tb.rows].forEach(tr => {
+    if (tr.querySelector('td[rowspan]')) { flush(); group = [tr]; }
+    else group.push(tr);
+  });
+  flush();
 }
 
 function toggleCmpSection(hdr, wrapId) {
@@ -3735,6 +4082,7 @@ function exportCmpExcel() {
     {구분:'추가된 부품 (신버전에만 있음)', 건수:cmpAddedRows.length},
     {구분:'삭제된 부품 (구버전에만 있음)', 건수:cmpDeletedRows.length},
     {구분:'변경된 부품 (항목 변경)',       건수:cmpChangedRows.length},
+    {구분:'대체품 변경 (품번 기준)',        건수:cmpDaecheRows.length},
   ]), '요약');
 
   // 추가 — 모든 열 포함
@@ -3751,6 +4099,17 @@ function exportCmpExcel() {
     chgRows.push({RefDes:r.ref, 변경항목:d.field, 구버전:d.old, 신버전:d.new})
   ));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(chgRows.length?chgRows:[{RefDes:'(없음)'}]), '변경된 부품');
+
+  // 대체품 변경
+  const dcRows = cmpDaecheRows.map(d=>({구분:d.type, 품번:d.pn, 품명:d.name, 규격:d.spec, Maker:d.maker, 변경내용:d.diff||''}));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dcRows.length?dcRows:[{구분:'(없음)'}]), '대체품 변경');
+
+  // 전체 시트 스타일 적용 (첫 시트=요약형, 나머지=목록형)
+  wb.SheetNames.forEach((nm, i) => {
+    if (i === 0) xlStyleSummary(wb.Sheets[nm]);
+    else xlStyleHeader(wb.Sheets[nm]);
+    xlAutoCols(wb.Sheets[nm]);
+  });
 
   const now = new Date();
   const stamp = now.getFullYear()+('0'+(now.getMonth()+1)).slice(-2)+('0'+now.getDate()).slice(-2);
@@ -3819,6 +4178,7 @@ ko: {
   cmpDetected:'감지된 열:',
   btnRunCmp:'🔍 버전 비교 실행',
   cmpAdded:'➕ 추가된 부품', cmpDeleted:'➖ 삭제된 부품', cmpChanged:'🔄 변경된 부품',
+  cmpNoAdded:'추가된 부품 없음', cmpNoDeleted:'삭제된 부품 없음', cmpNoChanged:'변경된 부품 없음', cmpNoDaeche:'대체품 변경 없음', cmpHdrRow:'헤더 행 번호 (1부터)',
   cmpAddedSub:'(신버전에만 있음)', cmpDeletedSub:'(구버전에만 있음)', cmpChangedSub:'(규격·품명 변경)',
   btnCmpExcel:'📥 비교 결과 엑셀 다운로드',
   cmpThField:'변경 항목', cmpThOld:'구버전', cmpThNew:'신버전',
@@ -3906,6 +4266,7 @@ en: {
   cmpDetected:'Detected columns:',
   btnRunCmp:'🔍 Run Version Compare',
   cmpAdded:'➕ Added Parts', cmpDeleted:'➖ Removed Parts', cmpChanged:'🔄 Changed Parts',
+  cmpNoAdded:'No added parts', cmpNoDeleted:'No removed parts', cmpNoChanged:'No changed parts', cmpNoDaeche:'No substitute changes', cmpHdrRow:'Header row (from 1)',
   cmpAddedSub:'(new version only)', cmpDeletedSub:'(old version only)', cmpChangedSub:'(spec/name changed)',
   btnCmpExcel:'📥 Download Compare Excel',
   cmpThField:'Changed Field', cmpThOld:'Old Version', cmpThNew:'New Version',
@@ -3993,6 +4354,7 @@ zh: {
   cmpDetected:'检测到的列：',
   btnRunCmp:'🔍 执行版本对比',
   cmpAdded:'➕ 新增元件', cmpDeleted:'➖ 删除元件', cmpChanged:'🔄 变更元件',
+  cmpNoAdded:'无新增元件', cmpNoDeleted:'无删除元件', cmpNoChanged:'无变更元件', cmpNoDaeche:'无替代品变更', cmpHdrRow:'表头行号 (从1开始)',
   cmpAddedSub:'（仅新版本）', cmpDeletedSub:'（仅旧版本）', cmpChangedSub:'（规格/品名变更）',
   btnCmpExcel:'📥 下载对比结果Excel',
   cmpThField:'变更项目', cmpThOld:'旧版本', cmpThNew:'新版本',
@@ -4080,6 +4442,7 @@ ja: {
   cmpDetected:'検出された列：',
   btnRunCmp:'🔍 バージョン比較実行',
   cmpAdded:'➕ 追加部品', cmpDeleted:'➖ 削除部品', cmpChanged:'🔄 変更部品',
+  cmpNoAdded:'追加部品なし', cmpNoDeleted:'削除部品なし', cmpNoChanged:'変更部品なし', cmpNoDaeche:'代替品変更なし', cmpHdrRow:'ヘッダー行番号 (1から)',
   cmpAddedSub:'（新バージョンのみ）', cmpDeletedSub:'（旧バージョンのみ）', cmpChangedSub:'（規格・品名変更）',
   btnCmpExcel:'📥 比較結果Excelダウンロード',
   cmpThField:'変更項目', cmpThOld:'旧バージョン', cmpThNew:'新バージョン',
@@ -4288,7 +4651,7 @@ const CHAT_FAQ = [
     id:'mismatch',
     keywords:['규격','불일치','mismatch','칩','사이즈','1608','2012','3216','피치','패키지','sod','sot','rt','at','radial','axial','리드','관통','파이','phi','선경','od','아일렛','eyelet','점퍼','바리스터','판정','근거','location만'],
     chips:['BOM만 항목이란?','좌표만 항목이란?','엑셀 내보내기'],
-    answer:'⚡ <b>규격 불일치</b><br><br>BOM 규격과 좌표 Decal의 규격이 다를 때 표시됩니다.<br><br>감지 항목:<br>· 칩 사이즈: BOM 1608 → 좌표 2012<br>· 피치: BOM P5.0 → 좌표 P7.5<br>· 패키지: BOM SOD-123 → 좌표 SOD-323<br>· RT/AT: BOM RT → 좌표 AT (Radial/Axial 불일치)<br>· 선경(Φ): BOM 0.8PHI·14 PHI → 좌표 PI0.8·PI14 (점퍼·바리스터)<br>· 아일렛 OD: BOM OD 1.6 → 좌표 EYELET(2.0)<br>· PI/피치 누락: 점퍼·바리스터 데칼에 PI나 피치 표기가 없으면 확인필요<br><br>RT/AT 판별 기준:<br>· RT(Radial): Decal에 RT 표기 또는 P5 피치<br>· AT(Axial): Decal에 AT 표기 또는 P9 이상 피치<br>· 피치 없으면 피치정보없음으로 표시<br><br><b>판정근거 컬럼</b>: 각 행이 어떤 검증(칩사이즈/피치/패키지/Φ선경/OD/RT·AT)을 통과했는지 표시합니다. <b>Location만</b>은 규격 정보를 추출할 수 없어 RefDes 존재 여부만 확인했다는 뜻이니 필요 시 직접 확인하세요.<br><br>불일치 셀은 분홍색으로 강조 표시됩니다.'
+    answer:'⚡ <b>규격 불일치</b><br><br>BOM 규격과 좌표 Decal의 규격이 다를 때 표시됩니다.<br><br>감지 항목:<br>· 칩 사이즈: BOM 1608 → 좌표 2012<br>· 피치: BOM P5.0 → 좌표 P7.5<br>· 패키지: BOM SOD-123 → 좌표 SOD-323<br>· RT/AT: BOM RT → 좌표 AT (Radial/Axial 불일치)<br>· 선경(Φ): BOM 0.8PHI·14 PHI → 좌표 PI0.8·PI14 (점퍼·바리스터)<br>· 아일렛 OD: BOM OD 1.6 → 좌표 EYELET(2.0)<br>· PI/피치 누락: 점퍼·바리스터 데칼에 PI나 피치 표기가 없으면 확인필요<br><br>RT/AT 판별 기준:<br>· RT(Radial): Decal에 RT 표기 또는 P5 피치<br>· AT(Axial): Decal에 AT 표기 또는 P9 이상 피치<br>· 비드(BEAD)는 BOM의 "RADIAL"·"AXIAL" 문구도 RT/AT로 인식<br>· 피치 없으면 피치정보없음으로 표시<br><br><b>판정근거 컬럼</b>: 각 행이 어떤 검증(칩사이즈/피치/패키지/Φ선경/OD/RT·AT)을 통과했는지 표시합니다. <b>Location만</b>은 규격 정보를 추출할 수 없어 RefDes 존재 여부만 확인했다는 뜻이니 필요 시 직접 확인하세요.<br><br>불일치 셀은 분홍색으로 강조 표시됩니다.'
   },
   {
     id:'bom_only',
@@ -4324,7 +4687,7 @@ const CHAT_FAQ = [
     id:'excel',
     keywords:['엑셀','excel','내보내기','저장','다운로드','xlsx','파일저장'],
     chips:['선택 항목만 저장','수정 페이지 기능'],
-    answer:'📥 <b>엑셀 내보내기</b><br><br>· <b>전체 저장</b> — 필터바 "📥 전체 저장" 버튼<br>· <b>선택 저장</b> — 체크박스로 선택 후 "📤 선택 저장"<br>· <b>수정 후 저장</b> — 우측 하단 "✏️ 수정 페이지" 버튼<br><br>내보내기 시트 구성:<br>· 전체 결과 + 규격불일치/BOM만/좌표만 별도 시트'
+    answer:'📥 <b>엑셀 내보내기</b><br><br>· <b>전체 저장</b> — 필터바 "📥 전체 저장" 버튼<br>· <b>선택 저장</b> — 체크박스로 선택 후 "📤 선택 저장"<br>· <b>수정 후 저장</b> — 우측 하단 "✏️ 수정 페이지" 버튼<br><br>내보내기 시트 구성:<br>· 전체 결과 + 규격불일치/BOM만/좌표만 별도 시트<br><br><b>자동 서식</b>: 헤더 색상·자동필터가 적용되고, 규격불일치는 분홍·BOM만은 빨강·좌표만은 주황·NC는 회색으로 행이 칠해집니다. 판정근거가 "Location만"인 셀은 주황으로 강조됩니다.'
   },
   {
     id:'filter',
@@ -4379,6 +4742,42 @@ const CHAT_FAQ = [
     keywords:['피드백','건의','제안','버그','신고','개선','요청','불편'],
     chips:['파일 업로드 방법'],
     answer:'💡 <b>개선 제안 / 피드백</b><br><br>상단 탭 우측 <b>"💡 개선 제안"</b> 버튼 클릭<br><br>· 기능 요청 / 버그 신고 / UI 개선 제안<br><br>전송하면 구글 스프레드시트에 자동 저장됩니다 😊'
+  },
+  {
+    id:'basis',
+    keywords:['판정근거','판정','근거','location만','로케이션만','location','어떻게 매칭','매칭 기준','검증 기준'],
+    chips:['규격 불일치란?','매칭률과 일치율 차이'],
+    answer:'🧾 <b>판정근거 컬럼</b><br><br>각 행이 <b>어떤 검증을 거쳐 매칭됐는지</b> 표시합니다.<br><br>· <b>칩사이즈</b> — 1608·2012·3216 등 사이즈 값 비교 통과<br>· <b>피치</b> — P5.0 등 피치 값 비교 통과<br>· <b>패키지</b> — SOD/SOT/SMA 등 패키지 비교 통과<br>· <b>Φ선경</b> — 0.8PHI ↔ PI0.8 선경 비교 통과<br>· <b>OD</b> — 아일렛 외경 비교 통과<br>· <b>RT/AT</b> — Radial/Axial 리드 타입 확인 통과<br>· 여러 개면 +로 연결 (예: Φ선경+피치)<br><br>🟠 <b>Location만</b>: 규격 정보를 추출할 수 없어 <b>RefDes 존재 여부만 확인</b>했다는 뜻입니다. 커넥터·트랜스·히트싱크 등이 해당하며, 필요 시 직접 규격을 확인하세요.'
+  },
+  {
+    id:'daeche',
+    keywords:['대체품','부속품','for','대체','서브','대용품'],
+    chips:['버전 비교 방법','규격 불일치란?'],
+    answer:'🔁 <b>대체품 · 부속품(FOR...) 처리</b><br><br><b>매칭 탭</b>에서는 둘 다 매칭 대상에서 자동 분리됩니다:<br>· Location이 "대체품"인 행 → 대체품 목록으로 분류<br>· Location이 "FOR ..."로 시작하는 행 → 부속품으로 분류 (엑셀 출력 시 별도 시트 옵션 있음)<br><br><b>버전 비교 탭</b>에서는 대체품을 <b>품번 기준</b>으로 구버전·신버전 비교해서 추가/삭제/변경(품명·규격·Maker)을 "🔁 대체품 변경" 섹션과 엑셀 시트로 보여줍니다.'
+  },
+  {
+    id:'skip',
+    keywords:['스킵','비pcb','skip','건너뛰','제외된 토큰','이상한 location'],
+    chips:['제외 설정 방법','매칭 실행하기'],
+    answer:'⚠ <b>비PCB 스킵이란?</b><br><br>BOM의 Location 값 중 <b>RefDes 형식이 아닌 항목</b>(영문 1~6자+숫자 패턴 불일치)을 매칭에서 건너뛰고 하단 <b>"⚠ 비PCB 스킵"</b> 탭에 모아서 보여줍니다.<br><br>예: 문구·메모·특수 표기가 Location 칸에 들어있는 경우<br><br>실제 부품인데 스킵됐다면 BOM의 Location 표기를 확인해보세요.'
+  },
+  {
+    id:'rate',
+    keywords:['매칭률','일치율','퍼센트','100%','비율','완전 일치','왜 다른'],
+    chips:['판정근거란?','규격 불일치란?'],
+    answer:'📊 <b>RefDes 매칭률 vs 규격 완전 일치율</b><br><br>· <b>RefDes 매칭률</b> = (매칭 + 규격불일치) ÷ BOM 전체 RefDes<br>→ BOM의 부품이 좌표 데이터에 <b>존재하는지</b>만 봅니다 (규격불일치도 RefDes는 매칭된 것)<br><br>· <b>규격 완전 일치율</b> = 매칭 ÷ BOM 전체 RefDes<br>→ 존재 + <b>규격까지 일치</b>한 비율<br><br>그래서 규격불일치가 있으면 두 수치가 달라집니다. 예: 전체 216, 매칭 215, 불일치 1 → 매칭률 100%, 완전 일치율 99.5%'
+  },
+  {
+    id:'security',
+    keywords:['보안','서버','전송','유출','업로드되','외부','개인정보','저장되'],
+    chips:['인터넷 없이 되나요?','자동저장이란?'],
+    answer:'🔒 <b>데이터 보안</b><br><br>업로드한 BOM·좌표 파일은 <b>외부 서버로 전송되지 않습니다.</b><br><br>· 모든 파싱·매칭·비교가 <b>브라우저 안에서만</b> 처리됩니다<br>· 파일 내용은 탭을 닫으면 사라집니다 (컬럼 설정 등만 브라우저 localStorage에 저장)<br>· 유일한 외부 전송은 <b>"💡 개선 제안"</b>을 직접 눌러 보낼 때뿐이며, 입력한 의견 텍스트만 전송됩니다<br><br>사내 자료를 다뤄도 안전합니다.'
+  },
+  {
+    id:'offline',
+    keywords:['인터넷','오프라인','안열려','안 열려','네트워크','cdn','로딩','접속','없이','연결','와이파이','인트라넷'],
+    chips:['보안은 안전한가요?','파일 업로드 방법'],
+    answer:'🌐 <b>인터넷 연결이 필요한가요?</b><br><br><b>첫 로딩 시에만</b> 인터넷이 필요합니다 — 엑셀 처리 라이브러리(xlsx-js-style)를 CDN(cdn.jsdelivr.net)에서 받아오기 때문입니다.<br><br>· 페이지가 열린 뒤에는 모든 기능이 로컬로 동작합니다<br>· 사내망에서 CDN이 차단되면 엑셀 읽기/저장이 안 될 수 있습니다 → 관리자에게 cdn.jsdelivr.net 허용을 요청하세요<br>· 파일 데이터는 인터넷으로 전송되지 않습니다 (보안 FAQ 참고)'
   },
 ];
 
